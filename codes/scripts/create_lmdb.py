@@ -7,14 +7,13 @@ import sys
 import cv2
 import lmdb
 
+sys.path.append("../")
 from utils import ProgressBar
 
-sys.path.append("../")
-
 # configurations
-img_folder = "/mnt/hdd/lzx/SRDatasets/Set5/BicLR/x2/*"
-lmdb_save_path = "/mnt/hdd/lzx/SRDatasets/Set5/BicLR/x2.lmdb"
-meta_info = {"name": "x2"}
+img_folder = "/mnt/hdd/lzx/SRDatasets/NTIRE2020/LR/x4_half/*"
+lmdb_save_path = "/mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb"
+meta_info = {"name": "biclrx4_half"}
 
 mode = (
     2  # 1 for reading all the images to memory and then writing to lmdb (more memory);
