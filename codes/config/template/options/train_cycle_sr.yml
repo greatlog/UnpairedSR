@@ -1,0 +1,175 @@
+#### general settings
+name: cyclesr_debug
+use_tb_logger: false
+model: CycleSRModel
+scale: 4
+gpu_ids: [4]
+metrics: [psnr, ssim]
+
+#### datasets
+datasets:
+  train:
+    name: DIV2K
+    mode: PairedRefDataset
+    data_type: lmdb
+    color: RGB
+    ratio: 8
+
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/bicubicx4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_input.lmdb
+
+    use_shuffle: true
+    n_workers: 4  # per GPU
+    batch_size: 32
+    tgt_size: 128
+    src_size: 32
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: 2020Track1
+    mode: PairedDataset
+    data_type: lmdb
+    color: RGB
+
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_input.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_gt.lmdb
+
+#### network structures
+netSR:
+  which_network: EDSR
+  setting:
+    nf: 64
+    nb: 16
+    res_scale: 0.1
+    upscale: 4
+  pretrain: 
+    path: ~
+    strict_load: true
+
+netD3:
+  which_network: DiscriminatorVGG128
+  setting:
+    in_nc: 3
+    nf: 64
+  
+netG1:
+  which_network: EDSR
+  setting:
+    nf: 64
+    nb: 16
+    res_scale: 1
+    upscale: 1
+  pretrain: 
+    path: ~
+    strict_load: true
+
+netD1:
+  which_network: DiscriminatorVGG32
+  setting:
+    in_nc: 3
+    nf: 64
+
+netG2:
+  which_network: EDSR
+  setting:
+    nf: 64
+    nb: 16
+    res_scale: 1
+    upscale: 1
+  pretrain: 
+    path: ~
+    strict_load: true
+
+netD2:
+  which_network: DiscriminatorVGG32
+  setting:
+    in_nc: 3
+    nf: 64
+
+#### training settings: learning rate scheme, loss
+train:
+  resume_state: ~
+
+  losses:
+    sr_adv:
+      type: GANLoss
+      gan_type: vanilla
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 5e-3
+
+    sr_pix: 
+      type: MSELoss
+      weight: 1.0
+
+    sr_percep:
+      type: PerceptualLoss
+      layer_weights:
+        'conv5_4': 1  # before relu
+      vgg_type: vgg19
+      use_input_norm: true
+      range_norm: false
+      perceptual_weight: 1.0
+      style_weight: 0
+      criterion: l1
+      weight: 1
+
+    g1_d1_adv:
+      type: GANLoss
+      gan_type: vanilla
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 5e-3
+
+    g2_d2_adv:
+      type: GANLoss
+      gan_type: vanilla
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 5e-3
+
+    g1g2_cycle:
+      type: MSELoss
+      weight: 1.0
+
+    g2g1_cycle: 
+      type: MSELoss
+      weight: 1.0
+
+  optimizers:
+    netSR:
+      type: Adam
+      lr: !!float 1e-4
+    netG1:
+      type: Adam
+      lr: !!float 1e-4
+    netG2:
+      type: Adam
+      lr: !!float 1e-4
+    netD1:
+      type: Adam
+      lr: !!float 1e-4
+    netD2:
+      type: Adam
+      lr: !!float 1e-4
+    netD3:
+      type: Adam
+      lr: !!float 1e-4
+  
+  niter: 400000
+  warmup_iter: -1  # no warm up
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [200000]
+    gamma: 0.5
+
+  manual_seed: 0
+  val_freq: !!float 5e3
+
+#### logger
+logger:
+  print_freq: 20
+  save_checkpoint_freq: !!float 5e3

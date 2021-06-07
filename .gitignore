@@ -1,0 +1,14 @@
+__pycache__/
+experiments/
+results/
+result/
+log/
+checkpoints/
+
+*.pkl
+*.pt
+*.pth
+*.jpg
+*.png
+*.state
+*.event

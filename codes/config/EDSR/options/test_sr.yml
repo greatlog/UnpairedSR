@@ -1,0 +1,58 @@
+#### general settings
+name: sr_wild
+use_tb_logger: false
+model: SRModel
+scale: 4
+gpu_ids: [3]
+
+metrics: [psnr, ssim, lpips, niqe, piqe, brisque]
+
+datasets:
+  test1:
+    name: 2017Track1
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  # test2:
+  #   name: Set14
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/Set14/BicLR/x4.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/Set14/HR/x4.lmdb
+  # test3:
+  #   name: BSDS100
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/BSDS100/BicLR/x4.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/BSDS100/HR/x4.lmdb
+  # test4:
+  #   name: urban100
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/urban100/BicLR/x4.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/urban100/HR/x4.lmdb
+  # test5:
+  #   name: manga109
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/manga109/BicLR/x4.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/manga109/HR/x4.lmdb
+  # test6:
+  #   name: div2k
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+
+#### network structures
+netSR:
+  which_network: EDSR
+  setting:
+    nf: 64
+    nb: 16
+    res_scale: 0.1
+    upscale: 4
+  pretrain: 
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
+    strict_load: true
