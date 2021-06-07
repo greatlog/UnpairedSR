@@ -15,7 +15,7 @@ datasets:
     color: RGB
     ratio: 8
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLR_x4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
@@ -32,7 +32,7 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/Bic/x4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
 
 #### network structures  
