@@ -29,9 +29,9 @@ class UnPairedDataset(data.Dataset):
             opt["data_type"], opt["dataroot_tgt"]
         )
 
-        random_indexes = random.sample(range(len(self.src_paths)), len(self.src_paths))
-        self.src_paths = self.src_paths[random_indexes]
-        self.src_sizes = self.src_sizes[random_indexes]
+        merged_src = list(zip(self.src_paths, self.src_sizes))
+        random.shuffle(merged_src)
+        self.src_paths[:], self.src_sizes[:] = zip(*merged_src)
 
         if opt["data_type"] == "lmdb":
             self.lmdb_envs = False
