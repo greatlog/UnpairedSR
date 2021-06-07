@@ -83,7 +83,7 @@ class CycleGANModel(BaseModel):
         self.tgt = data["tgt"].to(self.device)
 
         self.fake_tgt = self.netG1(self.src)
-        self.rec_src = self.netG2(self.fake_gt)
+        self.rec_src = self.netG2(self.fake_tgt)
         self.fake_src = self.netG2(self.tgt)
         self.rec_tgt = self.netG1(self.fake_src)
 
