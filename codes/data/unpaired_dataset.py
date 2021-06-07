@@ -13,9 +13,9 @@ from utils.registry import DATASET_REGISTRY
 
 
 @DATASET_REGISTRY.register()
-class UnpairedDataset(data.Dataset):
+class UnPairedDataset(data.Dataset):
     """
-    Read unpaired images, i.e., source (src) and target (tgt).
+    Read unpaired reference images, i.e., source (src) and target (tgt),
     """
 
     def __init__(self, opt):
@@ -29,22 +29,9 @@ class UnpairedDataset(data.Dataset):
             opt["data_type"], opt["dataroot_tgt"]
         )
 
-        if not len(self.ref_src_paths) == len(self.ref_tgt_paths):
-            raise ValueError(
-                "Reference source and Reference target datasets have different number of images - {}. {}.".format(
-                    len(self.ref_src_paths), len(self.ref_tgt_paths)
-                )
-            )
-
-        dataset_ratio = opt.get("ratio", len(self.ref_src_paths) / len(self.src_paths))
-        total_lentgh = int(dataset_ratio) * len(self.src_paths)
-
-        repeat_num = int(dataset_ratio) + 1
-        self.src_paths *= repeat_num
-        self.src_sizes *= repeat_num
-
-        self.src_paths = self.src_paths[:total_lentgh]
-        self.src_sizes = self.src_sizes[:total_lentgh]
+        random_indexes = random.sample(range(len(self.src_paths)), len(self.src_paths))
+        self.src_paths = self.src_paths[random_indexes]
+        self.src_sizes = self.src_sizes[random_indexes]
 
         if opt["data_type"] == "lmdb":
             self.lmdb_envs = False
@@ -62,40 +49,31 @@ class UnpairedDataset(data.Dataset):
 
     def __getitem__(self, index):
         if self.opt["data_type"] == "lmdb" and (not self.lmdb_envs):
-            self.ref_src_env, self.ref_tgt_env, self.src_env = self._init_lmdb(
+            self.src_env, self.tgt_env = self._init_lmdb(
                 [
-                    self.opt["dataroot_ref_src"],
-                    self.opt["dataroot_ref_tgt"],
                     self.opt["dataroot_src"],
+                    self.opt["dataroot_tgt"],
                 ]
             )
 
         scale = self.opt["scale"]
         cropped_src_size, cropped_tgt_size = self.opt["src_size"], self.opt["tgt_size"]
 
-        # get ref target image
-        ref_tgt_path = self.ref_tgt_paths[index]
+        # get tgt image
+        tgt_path = self.tgt_paths[index]
         if self.opt["data_type"] == "lmdb":
-            resolution = [int(s) for s in self.ref_tgt_sizes[index].split("_")]
+            resolution = [int(s) for s in self.tgt_sizes[index].split("_")]
         else:
             resolution = None
-        img_ref_tgt = util.read_img(
-            self.ref_tgt_env, ref_tgt_path, resolution
+        img_tgt = util.read_img(
+            self.tgt_env, tgt_path, resolution
         )  # return: Numpy float32, HWC, BGR, [0,1]
 
         # modcrop in the validation / test phase
         if self.opt["phase"] != "train":
-            img_ref_tgt = util.modcrop(img_ref_tgt, scale)
+            img_tgt = util.modcrop(img_tgt, scale)
 
-        # get ref source image
-        ref_src_path = self.ref_src_paths[index]
-        if self.opt["data_type"] == "lmdb":
-            resolution = [int(s) for s in self.ref_src_sizes[index].split("_")]
-        else:
-            resolution = None
-        img_ref_src = util.read_img(self.ref_src_env, ref_src_path, resolution)
-
-        # get source image
+        # get src image
         src_path = self.src_paths[index]
         if self.opt["data_type"] == "lmdb":
             resolution = [int(s) for s in self.src_sizes[index].split("_")]
@@ -104,40 +82,26 @@ class UnpairedDataset(data.Dataset):
         img_src = util.read_img(self.src_env, src_path, resolution)
 
         if self.opt["phase"] == "train":
-            H, W, C = img_ref_src.shape
+            H, W, C = img_src.shape
             assert (
                 cropped_src_size == cropped_tgt_size // scale
-            ), "GT size does not match LR size"
+            ), "tgt size does not match src size"
 
             # randomly crop
             rnd_h = random.randint(0, max(0, H - cropped_src_size))
             rnd_w = random.randint(0, max(0, W - cropped_src_size))
-            img_ref_src = img_ref_src[
+            img_src = img_src[
                 rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
             ]
             rnd_h_tgt, rnd_w_tgt = int(rnd_h * scale), int(rnd_w * scale)
-            img_ref_tgt = img_ref_tgt[
+            img_tgt = img_tgt[
                 rnd_h_tgt : rnd_h_tgt + cropped_tgt_size,
                 rnd_w_tgt : rnd_w_tgt + cropped_tgt_size,
                 :,
             ]
-
-            src_h, src_w, _ = img_src.shape
-            rnd_h = random.randint(0, max(0, src_h - cropped_src_size))
-            rnd_w = random.randint(0, max(0, src_w - cropped_src_size))
-            img_src = img_src[
-                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
-            ]
-
             # augmentation - flip, rotate
-            img_ref_tgt, img_ref_src = util.augment(
-                [img_ref_tgt, img_ref_src],
-                self.opt["use_flip"],
-                self.opt["use_rot"],
-                self.opt["mode"],
-            )
-            img_src = util.augment(
-                [img_src],
+            img_tgt, img_src = util.augment(
+                [img_tgt, img_src],
                 self.opt["use_flip"],
                 self.opt["use_rot"],
                 self.opt["mode"],
@@ -146,33 +110,27 @@ class UnpairedDataset(data.Dataset):
         # change color space if necessary
         if self.opt["color"]:
             # TODO during val no definition
-            img_ref_src, img_ref_tgt, img_src = util.channel_convert(
-                img_src.shape[2], self.opt["color"], [img_ref_src, img_ref_tgt, img_src]
+            img_src, img_tgt = util.channel_convert(
+                img_src.shape[2], self.opt["color"], [img_src, img_tgt]
             )
 
         # BGR to RGB, HWC to CHW, numpy to tensor
-        if img_ref_src.shape[2] == 3:
-            img_ref_src = img_ref_src[:, :, [2, 1, 0]]
-            img_ref_tgt = img_ref_tgt[:, :, [2, 1, 0]]
+        if img_src.shape[2] == 3:
             img_src = img_src[:, :, [2, 1, 0]]
+            img_tgt = img_tgt[:, :, [2, 1, 0]]
 
-        img_ref_src = torch.from_numpy(
-            np.ascontiguousarray(np.transpose(img_ref_src, (2, 0, 1)))
-        ).float()
-        img_ref_tgt = torch.from_numpy(
-            np.ascontiguousarray(np.transpose(img_ref_tgt, (2, 0, 1)))
-        ).float()
         img_src = torch.from_numpy(
             np.ascontiguousarray(np.transpose(img_src, (2, 0, 1)))
         ).float()
+        img_tgt = torch.from_numpy(
+            np.ascontiguousarray(np.transpose(img_tgt, (2, 0, 1)))
+        ).float()
 
         data_dict = {
-            "ref_src": img_ref_src,
-            "ref_tgt": img_ref_tgt,
             "src": img_src,
-            "ref_src_path": ref_src_path,
-            "ref_tgt_path": ref_tgt_path,
+            "tgt": img_tgt,
             "src_path": src_path,
+            "tgt_path": tgt_path,
         }
 
         return data_dict

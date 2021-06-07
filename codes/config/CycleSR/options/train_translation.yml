@@ -2,7 +2,7 @@
 name: cyclegan_translation
 use_tb_logger: false
 model: CycleGANModel
-scale: 4
+scale: 1
 gpu_ids: [1]
 metrics: [psnr, ssim]
 
