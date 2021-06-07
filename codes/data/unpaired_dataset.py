@@ -82,26 +82,35 @@ class UnPairedDataset(data.Dataset):
         img_src = util.read_img(self.src_env, src_path, resolution)
 
         if self.opt["phase"] == "train":
-            H, W, C = img_src.shape
             assert (
                 cropped_src_size == cropped_tgt_size // scale
             ), "tgt size does not match src size"
 
             # randomly crop
+            H, W, C = img_src.shape
             rnd_h = random.randint(0, max(0, H - cropped_src_size))
             rnd_w = random.randint(0, max(0, W - cropped_src_size))
             img_src = img_src[
                 rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
             ]
-            rnd_h_tgt, rnd_w_tgt = int(rnd_h * scale), int(rnd_w * scale)
+
+            H, W, C = img_tgt.shape
+            rnd_h = random.randint(0, max(0, H - cropped_src_size))
+            rnd_w = random.randint(0, max(0, W - cropped_src_size))
             img_tgt = img_tgt[
-                rnd_h_tgt : rnd_h_tgt + cropped_tgt_size,
-                rnd_w_tgt : rnd_w_tgt + cropped_tgt_size,
-                :,
+                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
             ]
+
             # augmentation - flip, rotate
-            img_tgt, img_src = util.augment(
-                [img_tgt, img_src],
+            img_tgt = util.augment(
+                [img_tgt],
+                self.opt["use_flip"],
+                self.opt["use_rot"],
+                self.opt["mode"],
+            )
+
+            img_src = util.augment(
+                [img_src],
                 self.opt["use_flip"],
                 self.opt["use_rot"],
                 self.opt["mode"],
