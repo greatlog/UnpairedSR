@@ -83,7 +83,9 @@ class CycleGANModel(BaseModel):
         self.tgt = data["tgt"].to(self.device)
 
         self.fake_tgt = self.netG1(self.src)
+        self.rec_src = self.netG2(self.fake_gt)
         self.fake_src = self.netG2(self.tgt)
+        self.rec_tgt = self.netG1(self.fake_src)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
@@ -93,22 +95,22 @@ class CycleGANModel(BaseModel):
         self.set_requires_grad(["netD1", "netD2"], False)
 
         g1_adv_loss = self.calculate_rgan_loss_G(
-            self.netD1, self.losses["g1_d1_adv"], self.real_lr, self.fake_real_lr
+            self.netD1, self.losses["g1_d1_adv"], self.src, self.fake_src
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_trans += self.loss_weights["g1_d1_adv"] * g1_adv_loss
 
         g2_adv_loss = self.calculate_rgan_loss_G(
-            self.netD2, self.losses["g2_d2_adv"], self.real_lr, self.fake_real_lr
+            self.netD2, self.losses["g2_d2_adv"], self.src, self.fake_src
         )
         loss_dict["g2_adv"] = g1_adv_loss.item()
         loss_trans += self.loss_weights["g2_d2_adv"] * g2_adv_loss
 
-        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_real_lr, self.real_lr)
+        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_src, self.src)
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
         loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
-        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_syn_lr, self.syn_lr)
+        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_tgt, self.tgt)
         loss_dict["g2g1_cycle"] = g2g1_cycle.item()
         loss_trans += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
@@ -123,13 +125,13 @@ class CycleGANModel(BaseModel):
 
         loss_d1d2 = 0
         loss_d1 = self.calculate_rgan_loss_D(
-            self.netD1, self.losses["g1_d1_adv"], self.real_lr, self.fake_real_lr
+            self.netD1, self.losses["g1_d1_adv"], self.src, self.fake_src
         )
         loss_dict["d1_adv"] = loss_d1.item()
         loss_d1d2 += loss_d1
 
         loss_d2 = self.calculate_rgan_loss_D(
-            self.netD2, self.losses["g2_d2_adv"], self.syn_lr, self.fake_syn_lr
+            self.netD2, self.losses["g2_d2_adv"], self.tgt, self.fake_tgt
         )
         loss_dict["d2_adv"] = loss_d2.item()
         loss_d1d2 += loss_d2
@@ -166,15 +168,15 @@ class CycleGANModel(BaseModel):
 
         return loss
 
-    def test(self, real_lr):
-        self.real_lr = real_lr.to(self.device)
-        self.netSR.eval()
+    def test(self, src):
+        self.src = src.to(self.device)
+        self.netG1.eval()
         with torch.no_grad():
-            self.fake_real_hr = self.netSR(self.real_lr)
-        self.netSR.train()
+            self.fake_tgt = self.netG1(self.src)
+        self.netG1.train()
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
-        out_dict["lr"] = self.real_lr.detach()[0].float().cpu()
-        out_dict["sr"] = self.fake_real_hr.detach()[0].float().cpu()
+        out_dict["lr"] = self.src.detach()[0].float().cpu()
+        out_dict["sr"] = self.fake_tgt.detach()[0].float().cpu()
         return out_dict
