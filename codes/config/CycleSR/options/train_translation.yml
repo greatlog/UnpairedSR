@@ -10,7 +10,7 @@ metrics: [psnr, ssim]
 datasets:
   train:
     name: DIV2K
-    mode: PairedDataset
+    mode: UnPairedDataset
     data_type: lmdb
     color: RGB
     ratio: 8
