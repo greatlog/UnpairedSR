@@ -45,7 +45,7 @@ netSR:
     res_scale: 0.1
     upscale: 4
   pretrain: 
-    path: ~
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
     strict_load: true
 
 netD3:
@@ -98,10 +98,10 @@ train:
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 5e-3
+      weight: !!float 1e-2
 
     sr_pix: 
-      type: MSELoss
+      type: L1Loss
       weight: 1.0
 
     sr_percep:
@@ -121,21 +121,21 @@ train:
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 5e-3
+      weight: !!float 1e-2
 
     g2_d2_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 5e-3
+      weight: !!float 1e-2
 
     g1g2_cycle:
-      type: MSELoss
+      type: L1Loss
       weight: 1.0
 
     g2g1_cycle: 
-      type: MSELoss
+      type: L1Loss
       weight: 1.0
 
   optimizers:
