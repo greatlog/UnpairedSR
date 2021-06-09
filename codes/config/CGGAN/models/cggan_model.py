@@ -12,7 +12,7 @@ logger = logging.getLogger("base")
 
 
 @MODEL_REGISTRY.register()
-class CinGANModel(BaseModel):
+class CGGANModel(BaseModel):
     def __init__(self, opt):
         super().__init__(opt)
         if opt["dist"]:
@@ -22,16 +22,16 @@ class CinGANModel(BaseModel):
 
         self.data_names = ["syn_lr", "syn_hr", "real_lr"]
 
-        self.network_names = ["netSR", "netG1", "netG2", "netG3", "netD1", "netD2"]
+        self.network_names = ["netSR", "netG1", "netD1", "netD2"]
         self.networks = {}
 
         self.loss_names = [
             "srd2_adv",
+            "sr_percep",
+            "lr_percep",
             "sr_tv",
-            "srg3_cycle",
             "g1d1_adv",
-            "g1g2_cycle",
-            "lr_tv"
+            "sr_pix"
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -85,82 +85,80 @@ class CinGANModel(BaseModel):
         self.syn_hr = data["ref_tgt"].to(self.device)
         self.real_lr = data["src"].to(self.device)
 
-        self.fake_syn_lr = self.netG1(self.real_lr)
-        self.rec_real_lr_g2 = self.netG2(self.fake_syn_lr)
-        self.fake_real_hr = self.netSR(self.fake_syn_lr.detach())
-        self.rec_real_lr_g3 = self.netG3(self.fake_real_hr)
+        self.fake_real_lr = self.netG1(self.syn_lr)
+        self.fake_syn_hr = self.netSR(self.fake_real_lr)
+        self.fake_real_hr = self.netSR(self.real_lr)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
-        loss_trans = 0
+        loss_G = 0
         self.set_requires_grad(["netD1", "netD2"], False)
 
         g1_adv_loss = self.calculate_rgan_loss_G(
-            self.netD1, self.losses["g1d1_adv"], self.syn_lr, self.fake_syn_lr
+            self.netD1, self.losses["g1d1_adv"], self.real_lr, self.fake_real_lr
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
-        loss_trans += self.loss_weights["g1d1_adv"] * g1_adv_loss
+        loss_G += self.loss_weights["g1d1_adv"] * g1_adv_loss
 
-        lr_tv_loss = self.losses["lr_tv"](self.fake_syn_lr)
-        loss_dict["lr_tv"] = lr_tv_loss.item()
-        loss_trans += self.loss_weights["lr_tv"] * lr_tv_loss
+        lr_percep, lr_style = self.losses["lr_percep"](
+            self.real_lr, self.fake_real_lr
+        )
+        loss_dict["lr_percep"] = lr_percep.item()
+        if lr_style is not None:
+            loss_dict["lr_style"] = lr_style.item()
+            loss_G += self.loss_weights["sr_percep"] * lr_style
+        loss_G += self.loss_weights["sr_percep"] * lr_percep
 
-        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_real_lr_g2, self.real_lr)
-        loss_dict["g1g2_cycle"] = g1g2_cycle.item()
-        loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
+        sr_adv = self.calculate_rgan_loss_G(
+            self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
+        )
+        loss_dict["sr_adv"] = sr_adv.item()
+        loss_G += self.loss_weights["srd2_adv"] * sr_adv
+
+        sr_pix = self.losses["sr_pix"](self.fake_syn_hr, self.syn_hr)
+        loss_dict["sr_pix"] = sr_pix.item()
+        loss_G += self.loss_weights["sr_pix"] * sr_pix
+
+        sr_percep, sr_style = self.losses["sr_percep"](
+            self.syn_hr, self.fake_real_hr
+        )
+        loss_dict["sr_percep"] = sr_percep.item()
+        if sr_style is not None:
+            loss_dict["sr_style"] = sr_style.item()
+            loss_G += self.loss_weights["sr_percep"] * sr_style
+        loss_G += self.loss_weights["sr_percep"] * sr_percep
+
+        sr_tv = self.losses["sr_tv"](self.fake_real_hr)
+        loss_dict["sr_tv"] = sr_tv.item()
+        loss_G = self.loss_weights["sr_tv"] * sr_tv
 
         self.optimizer_operator(
-            names=["netG1", "netG2"], operation="zero_grad"
+            names=["netG1", "netSR"], operation="zero_grad"
         )
-        loss_trans.backward()
-        self.optimizer_operator(names=["netG1", "netG2"], operation="step")
+        loss_G.backward()
+        self.optimizer_operator(names=["netG1", "netSR"], operation="step")
 
         ## update D1, D2
-        self.set_requires_grad(["netD1"], True)
+        self.set_requires_grad(["netD1", "netD2"], True)
 
-        loss_d1d2 = 0
+        loss_D = 0
         loss_d1 = self.calculate_rgan_loss_D(
-            self.netD1, self.losses["g1d1_adv"], self.syn_lr, self.fake_syn_lr
+            self.netD1, self.losses["g1d1_adv"], self.real_lr, self.fake_real_lr
         )
         loss_dict["d1_adv"] = loss_d1.item()
-        loss_d1d2 += loss_d1
+        loss_D += loss_d1
 
-        self.optimizer_operator(names=["netD1"], operation="zero_grad")
-        loss_d1d2.backward()
-        self.optimizer_operator(names=["netD1"], operation="step")
+        loss_D = 0
+        loss_d2 = self.calculate_rgan_loss_D(
+            self.netD2, self.losses["g1d1_adv"], self.syn_hr, self.fake_real_hr
+        )
+        loss_dict["d1_adv"] = loss_d2.item()
+        loss_D += loss_d2
 
-        l_sr = 0
-        if self.losses.get("srd2_adv"):
-            self.set_requires_grad(["netD2"], False)
-            srd2_adv_g = self.calculate_rgan_loss_G(
-                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
-            )
-            loss_dict["srd2_adv_g"] = srd2_adv_g.item()
-            l_sr += srd2_adv_g
-        
-        sr_tv_loss = self.losses["sr_tv"](self.fake_real_hr)
-        loss_dict["sr_tv"] = sr_tv_loss.item()
-        l_sr += sr_tv_loss
-
-        srg3_cycle = self.losses["srg3_cycle"](self.rec_real_lr_g3, self.real_lr)
-        loss_dict["srg3_cycle"] = srg3_cycle.item()
-        l_sr += srg3_cycle
-
-        self.optimizer_operator(names=["netSR", "netG3"], operation="zero_grad")
-        l_sr.backward()
-        self.optimizer_operator(names=["netSR", "netG3"], operation="step")
-
-        if self.losses.get("srd2_adv"):
-            self.set_requires_grad(["netD2"], True)
-            srd2_adv_d = self.calculate_rgan_loss_D(
-                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
-            )
-            loss_dict["srd2_adv_d"] = srd2_adv_d.item()
-
-            self.optimizers["netD2"].zero_grad()
-            srd2_adv_d.backward()
-            self.optimizers["netD2"].step()
+        self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
+        loss_D.backward()
+        self.optimizer_operator(names=["netD1", "netD2"], operation="step")
 
         self.log_dict = loss_dict
 
@@ -192,11 +190,10 @@ class CinGANModel(BaseModel):
 
     def test(self, real_lr):
         self.real_lr = real_lr.to(self.device)
-        self.set_train_state(["netSR", "netG1"], "eval")
+        self.set_train_state(["netSR"], "eval")
         with torch.no_grad():
-            self.fake_syn_lr = self.netG1(self.real_lr)
-            self.fake_real_hr = self.netSR(self.fake_syn_lr)
-        self.set_train_state(["netSR", "netG1"], "train")
+            self.fake_real_hr = self.netSR(self.real_lr)
+        self.set_train_state(["netSR"], "train")
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()

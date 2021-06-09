@@ -114,7 +114,6 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             opt["train"]["resume_state"],
             map_location=lambda storage, loc: storage.cuda(device_id),
         )
-        option.check_resume(opt, resume_state["iter"])  # check resume options
     else:
         resume_state = None
 

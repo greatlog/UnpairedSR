@@ -1,40 +1,61 @@
 #### general settings
-name: cyclegan_translation
+name: cingan
 use_tb_logger: false
-model: CycleGANModel
-scale: 1
-gpu_ids: [3]
+model: PSSRModel
+scale: 4
+gpu_ids: [1]
 metrics: [psnr, ssim]
 
 #### datasets
 datasets:
   train:
     name: DIV2K
-    mode: UnPairedDataset
+    mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratio: 8
+    ratio: 1
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
+    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
     dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
     batch_size: 32
-    tgt_size: 32
+    tgt_size: 128
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: DIV2K
+    name: 2017Track1
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
     dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
 
+#### network structures
+netSR:
+  which_network: EDSR
+  setting:
+    nf: 64
+    nb: 16
+    res_scale: 0.1
+    upscale: 4
+  pretrain: 
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
+    strict_load: true
+
+netD3:
+  which_network: PatchGANDiscriminator
+  setting:
+    in_c: 3
+    nf: 64
+    nb: 3
+    stride: 1
+  
 #### network structures  
 netG1:
   which_network: Translator
@@ -54,40 +75,71 @@ netD1:
     nf: 64
     nb: 3
     stride: 1
+  pretrain: 
+    path: ~
+    strict_load: true
 
 netG2:
   which_network: Translator
   setting:
     nf: 64
-    nb: 8
+    nb: 16
     zero_tail: true
     scale: 1
   pretrain: 
     path: ~
     strict_load: true
+  
+netD2:
+  which_network: PatchGANDiscriminator
+  setting:
+    in_c: 3
+    nf: 64
+    nb: 3
+    stride: 1
 
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
 
   losses:
-    g1d1_adv:
+    sr_pix:
+      type: L1Loss
+      weight: 1
+
+    srd3_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 0.5
 
+    g1d1_adv:
+      type: GANLoss
+      gan_type: vanilla
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 0.5
+    
     g1g2_cycle:
       type: L1Loss
       weight: 1.0
-      
-    lr_tv:
-      type: TVLoss
-      penealty: MSELoss
-      weight: 0.05
+    
+    g2d2_adv:
+      type: GANLoss
+      gan_type: vanilla
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 0.5
+    
+    g2g1_cycle:
+      type: L1Loss
+      weight: 1.0
 
   optimizers:
+    netSR:
+      type: Adam
+      lr: !!float 1e-4
     netG1:
       type: Adam
       lr: !!float 1e-4
@@ -98,6 +150,9 @@ train:
       type: Adam
       lr: !!float 1e-4
     netD2:
+      type: Adam
+      lr: !!float 1e-4
+    netD3:
       type: Adam
       lr: !!float 1e-4
   
