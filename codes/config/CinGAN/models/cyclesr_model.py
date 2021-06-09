@@ -114,9 +114,9 @@ class CycleSRModel(BaseModel):
             loss_trans += self.loss_weights["g1_d1_adv"] * g1_adv_loss
 
             g2_adv_loss = self.calculate_rgan_loss_G(
-                self.netD2, self.losses["g2_d2_adv"], self.real_lr, self.fake_real_lr
+                self.netD2, self.losses["g2_d2_adv"], self.syn_lr, self.fake_syn_lr
             )
-            loss_dict["g2_adv"] = g1_adv_loss.item()
+            loss_dict["g2_adv"] = g2_adv_loss.item()
             loss_trans += self.loss_weights["g2_d2_adv"] * g2_adv_loss
 
             g1g2_cycle = self.losses["g1g2_cycle"](self.rec_real_lr, self.real_lr)

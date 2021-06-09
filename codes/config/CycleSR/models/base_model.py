@@ -1,15 +1,15 @@
-import logging
 import os
+import logging
 from collections import OrderedDict
 
 import torch
 import torch.nn as nn
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 
-from archs import build_loss, build_network
-from utils.registry import MODEL_REGISTRY
+from archs import build_network, build_loss
 
-from .lr_scheduler import CosineAnnealingRestartLR, MultiStepRestartLR
+from utils.registry import MODEL_REGISTRY
+from .lr_scheduler import MultiStepRestartLR, CosineAnnealingRestartLR
 
 logger = logging.getLogger("base")
 
@@ -195,7 +195,7 @@ class BaseModel:
         torch.save(state_dict, save_path)
 
     def save(self, iter_label):
-        for name in self.network_names:
+        for name in self.optimizers.keys():
             self.save_network(self.networks[name], name, iter_label)
 
     def load_network(self, network, load_path, strict=True):
@@ -215,11 +215,11 @@ class BaseModel:
 
     def save_training_state(self, epoch, iter_step):
         """Saves training state during training, which will be used for resuming"""
-        state = {"epoch": epoch, "iter": iter_step, "schedulers": [], "optimizers": []}
+        state = {"epoch": epoch, "iter": iter_step, "schedulers": {}, "optimizers": {}}
         for k, s in self.schedulers.items():
-            state["schedulers"].append({k: s.state_dict()})
+            state["schedulers"][k] = s.state_dict()
         for k, o in self.optimizers.items():
-            state["optimizers"].append({k: o.state_dict()})
+            state["optimizers"][k] = o.state_dict()
         save_filename = "{}.state".format(iter_step)
         save_path = os.path.join(self.opt["path"]["training_state"], save_filename)
         torch.save(state, save_path)

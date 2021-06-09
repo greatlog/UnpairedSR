@@ -3,7 +3,7 @@ name: cyclegan_translation
 use_tb_logger: false
 model: CycleGANModel
 scale: 1
-gpu_ids: [4]
+gpu_ids: [3]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,8 +15,8 @@ datasets:
     color: RGB
     ratio: 8
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
@@ -32,8 +32,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
 
 #### network structures  
 netG1:
@@ -41,7 +41,8 @@ netG1:
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    zero_tail: true
+    scale: 1
   pretrain: 
     path: ~
     strict_load: true
@@ -52,23 +53,18 @@ netD1:
     in_c: 3
     nf: 64
     nb: 3
+    stride: 1
 
 netG2:
   which_network: Translator
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    zero_tail: true
+    scale: 1
   pretrain: 
     path: ~
     strict_load: true
-
-netD2:
-  which_network: PatchGANDiscriminator
-  setting:
-    in_c: 3
-    nf: 64
-    nb: 3
 
 #### training settings: learning rate scheme, loss
 train:
@@ -82,20 +78,13 @@ train:
       fake_label_val: 0.0
       weight: !!float 0.5
 
-    g2d2_adv:
-      type: GANLoss
-      gan_type: vanilla
-      real_label_val: 1.0
-      fake_label_val: 0.0
-      weight: !!float 0.5
-
     g1g2_cycle:
       type: L1Loss
       weight: 1.0
-
-    g2g1_cycle: 
-      type: L1Loss
-      weight: 1.0
+      
+    lr_tv:
+      type: TVLoss
+      weight: 0.05
 
   optimizers:
     netG1:
@@ -116,7 +105,7 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [500000]
+    milestones: [50000]
     gamma: 0.5
 
   manual_seed: 0

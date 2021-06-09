@@ -323,7 +323,8 @@ def main_worker(gpu, ngpus_per_node, opt, args):
         logger.info("Saving the final model.")
         model.save("latest")
         logger.info("End of training.")
-    tb_logger.close()
+        if opt["use_tb_logger"] and "debug" not in opt["name"]:
+            tb_logger.close()
 
 
 if __name__ == "__main__":

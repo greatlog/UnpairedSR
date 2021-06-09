@@ -22,14 +22,13 @@ class CycleGANModel(BaseModel):
 
         self.data_names = ["src", "tgt"]
 
-        self.network_names = ["netG1", "netG2", "netD1", "netD2"]
+        self.network_names = ["netG1", "netG2", "netD1"]
         self.networks = {}
 
         self.loss_names = [
             "g1d1_adv",
-            "g2d2_adv",
             "g1g2_cycle",
-            "g2g1_cycle",
+            "lr_tv"
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -84,15 +83,13 @@ class CycleGANModel(BaseModel):
 
         self.fake_tgt = self.netG1(self.src)
         self.rec_src = self.netG2(self.fake_tgt)
-        self.fake_src = self.netG2(self.tgt)
-        self.rec_tgt = self.netG1(self.fake_src)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
         loss_trans = 0
         # set D fixed
-        self.set_requires_grad(["netD1", "netD2"], False)
+        self.set_requires_grad(["netD1"], False)
 
         g1_adv_loss = self.calculate_rgan_loss_G(
             self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
@@ -100,19 +97,13 @@ class CycleGANModel(BaseModel):
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_trans += self.loss_weights["g1d1_adv"] * g1_adv_loss
 
-        g2_adv_loss = self.calculate_rgan_loss_G(
-            self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
-        )
-        loss_dict["g2_adv"] = g2_adv_loss.item()
-        loss_trans += self.loss_weights["g2d2_adv"] * g2_adv_loss
+        lr_tv = self.losses["lr_tv"](self.fake_tgt)
+        loss_dict["lr_tv"] = lr_tv.item()
+        loss_trans += self.loss_weights["lr_tv"] * lr_tv
 
         g1g2_cycle = self.losses["g1g2_cycle"](self.rec_src, self.src)
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
         loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
-
-        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_tgt, self.tgt)
-        loss_dict["g2g1_cycle"] = g2g1_cycle.item()
-        loss_trans += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
         self.optimizer_operator(
             names=["netG1", "netG2"], operation="zero_grad"
@@ -121,7 +112,7 @@ class CycleGANModel(BaseModel):
         self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 
         ## update D1, D2
-        self.set_requires_grad(["netD1", "netD2"], True)
+        self.set_requires_grad(["netD1"], True)
 
         loss_d1d2 = 0
         loss_d1 = self.calculate_rgan_loss_D(
@@ -130,15 +121,9 @@ class CycleGANModel(BaseModel):
         loss_dict["d1_adv"] = loss_d1.item()
         loss_d1d2 += loss_d1
 
-        loss_d2 = self.calculate_rgan_loss_D(
-            self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
-        )
-        loss_dict["d2_adv"] = loss_d2.item()
-        loss_d1d2 += loss_d2
-
-        self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
+        self.optimizer_operator(names=["netD1"], operation="zero_grad")
         loss_d1d2.backward()
-        self.optimizer_operator(names=["netD1", "netD2"], operation="step")
+        self.optimizer_operator(names=["netD1"], operation="step")
 
         self.log_dict = loss_dict
 

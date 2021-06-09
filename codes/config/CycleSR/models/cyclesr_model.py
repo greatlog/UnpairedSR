@@ -114,9 +114,9 @@ class CycleSRModel(BaseModel):
             loss_trans += self.loss_weights["g1_d1_adv"] * g1_adv_loss
 
             g2_adv_loss = self.calculate_rgan_loss_G(
-                self.netD2, self.losses["g2_d2_adv"], self.real_lr, self.fake_real_lr
+                self.netD2, self.losses["g2_d2_adv"], self.syn_lr, self.fake_syn_lr
             )
-            loss_dict["g2_adv"] = g1_adv_loss.item()
+            loss_dict["g2_adv"] = g2_adv_loss.item()
             loss_trans += self.loss_weights["g2_d2_adv"] * g2_adv_loss
 
             g1g2_cycle = self.losses["g1g2_cycle"](self.rec_real_lr, self.real_lr)
@@ -132,10 +132,10 @@ class CycleSRModel(BaseModel):
             loss_trans += self.loss_weights["sr_pix"] * loss_sr_pix
 
             self.optimizer_operator(
-                names=["netG1", "netG2", "netSR"], operation="zero_grad"
+                names=["netG1", "netG2"], operation="zero_grad"
             )
             loss_trans.backward()
-            self.optimizer_operator(names=["netG1", "netG2", "netSR"], operation="step")
+            self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 
             ## update D1, D2
             self.set_requires_grad(["netD1", "netD2"], True)
@@ -197,7 +197,8 @@ class CycleSRModel(BaseModel):
                 sr_adv_d.backward()
                 self.optimizers["netD3"].step()
 
-        self.log_dict = loss_dict
+        for k, v in loss_dict.items():
+            self.log_dict[k] = v
 
     def calculate_rgan_loss_D(self, netD, criterion, real, fake):
 

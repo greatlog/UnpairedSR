@@ -1,7 +1,7 @@
 #### general settings
-name: cyclesr_debug
+name: cingan
 use_tb_logger: false
-model: CycleSRModel
+model: CinGANModel
 scale: 4
 gpu_ids: [4]
 
@@ -49,4 +49,14 @@ netSR:
     upscale: 4
   pretrain: 
     path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
+    strict_load: true
+
+netG1:
+  which_network: Translator
+  setting:
+    nf: 64
+    nb: 16
+    scale: 1
+  pretrain: 
+    path: ~
     strict_load: true

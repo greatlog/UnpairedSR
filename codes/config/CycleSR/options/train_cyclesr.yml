@@ -1,9 +1,9 @@
 #### general settings
-name: cyclesr_debug
+name: cyclesr
 use_tb_logger: false
 model: CycleSRModel
 scale: 4
-gpu_ids: [4]
+gpu_ids: [1]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -45,48 +45,59 @@ netSR:
     res_scale: 0.1
     upscale: 4
   pretrain: 
-    path: ~
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
     strict_load: true
 
 netD3:
-  which_network: DiscriminatorVGG128
+  which_network: PatchGANDiscriminator
   setting:
-    in_nc: 3
+    in_c: 3
     nf: 64
+    nb: 3
+    stride: 1
   
+#### network structures  
 netG1:
-  which_network: EDSR
+  which_network: Translator
   setting:
     nf: 64
-    nb: 16
-    res_scale: 1
+    nb: 8
     upscale: 1
   pretrain: 
-    path: ~
+    path: log/cyclegan_translation/models/latest_netG1.pth
     strict_load: true
 
 netD1:
-  which_network: DiscriminatorVGG32
+  which_network: PatchGANDiscriminator
   setting:
-    in_nc: 3
+    in_c: 3
     nf: 64
+    nb: 3
+    stride: 1
+  pretrain: 
+    path: log/cyclegan_translation/models/latest_netD1.pth
+    strict_load: true
 
 netG2:
-  which_network: EDSR
+  which_network: Translator
   setting:
     nf: 64
-    nb: 16
-    res_scale: 1
+    nb: 8
     upscale: 1
   pretrain: 
-    path: ~
+    path: log/cyclegan_translation/models/latest_netG2.pth
     strict_load: true
 
 netD2:
-  which_network: DiscriminatorVGG32
+  which_network: PatchGANDiscriminator
   setting:
-    in_nc: 3
+    in_c: 3
     nf: 64
+    nb: 3
+    stride: 1
+  pretrain: 
+    path: log/cyclegan_translation/models/latest_netD2.pth
+    strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
@@ -98,10 +109,10 @@ train:
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 5e-3
+      weight: !!float 0.5
 
     sr_pix: 
-      type: MSELoss
+      type: L1Loss
       weight: 1.0
 
     sr_percep:
@@ -114,28 +125,28 @@ train:
       perceptual_weight: 1.0
       style_weight: 0
       criterion: l1
-      weight: 1
+      weight: !!float 1.0
 
     g1_d1_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 5e-3
+      weight: !!float 0.5
 
     g2_d2_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 5e-3
+      weight: !!float 0.5
 
     g1g2_cycle:
-      type: MSELoss
+      type: L1Loss
       weight: 1.0
 
     g2g1_cycle: 
-      type: MSELoss
+      type: L1Loss
       weight: 1.0
 
   optimizers:
@@ -144,26 +155,26 @@ train:
       lr: !!float 1e-4
     netG1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netG2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD3:
       type: Adam
       lr: !!float 1e-4
   
-  niter: 400000
+  niter: 100000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [200000]
+    milestones: [50000]
     gamma: 0.5
 
   manual_seed: 0
@@ -171,5 +182,5 @@ train:
 
 #### logger
 logger:
-  print_freq: 20
+  print_freq: 100
   save_checkpoint_freq: !!float 5e3

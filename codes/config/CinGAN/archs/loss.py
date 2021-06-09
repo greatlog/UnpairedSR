@@ -6,6 +6,19 @@ from utils.registry import LOSS_REGISTRY
 
 from .vgg import VGGFeatureExtractor
 
+@LOSS_REGISTRY.register()
+class TVLoss(nn.Module):
+    def __init__(self,):
+        super().__init__()
+
+    def forward(self, pred):
+        y_diff = F.l1_loss(pred[:, :, :-1, :], pred[:, :, 1:, :])
+        x_diff = F.l1_loss(pred[:, :, :, :-1], pred[:, :, :, 1:])
+
+        loss = x_diff + y_diff
+
+        return loss
+
 
 @LOSS_REGISTRY.register()
 class MSELoss(nn.Module):
