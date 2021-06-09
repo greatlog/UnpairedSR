@@ -147,7 +147,7 @@ class CGGANModel(BaseModel):
         loss_d2 = self.calculate_rgan_loss_D(
             self.netD2, self.losses["g1d1_adv"], self.syn_hr, self.fake_real_hr
         )
-        loss_dict["d1_adv"] = loss_d2.item()
+        loss_dict["d2_adv"] = loss_d2.item()
         loss_D += loss_d2
 
         self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
