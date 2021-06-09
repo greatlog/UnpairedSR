@@ -28,7 +28,7 @@ datasets:
     use_rot: true
 
   val:
-    name: 2020Track1
+    name: 2017Track1
     mode: PairedDataset
     data_type: lmdb
     color: RGB

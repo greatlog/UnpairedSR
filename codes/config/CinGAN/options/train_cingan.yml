@@ -82,7 +82,7 @@ netG2:
   which_network: Translator
   setting:
     nf: 64
-    nb: 16
+    nb: 8
     scale: 1
   pretrain: 
     path: log/cyclegan_translation/models/latest_netG2.pth
@@ -92,7 +92,7 @@ netG3:
   which_network: Translator
   setting:
     nf: 64
-    nb: 16
+    nb: 8
     scale: 0.25
   pretrain: 
     path: ~
