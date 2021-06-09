@@ -31,7 +31,7 @@ class PSSRModel(BaseModel):
             "g1d1_adv",
             "g2d2_adv",
             "g1g2_cycle",
-            "g2g1_cycle"
+            "g2g1_cycle",
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -60,7 +60,7 @@ class PSSRModel(BaseModel):
                     if loss_conf["weight"] > 0:
                         self.loss_weights[name] = loss_conf.pop("weight")
                         self.losses[name] = self.build_loss(loss_conf)
-            
+
             # build optmizers
             self.set_train_state(self.networks, "train")
             optimizer_opt = train_opt["optimizers"]
@@ -161,7 +161,9 @@ class PSSRModel(BaseModel):
         loss_dict["d3_adv"] = loss_d3.item()
         loss_D += loss_d3
 
-        self.optimizer_operator(names=["netD1", "netD2", "netD3"], operation="zero_grad")
+        self.optimizer_operator(
+            names=["netD1", "netD2", "netD3"], operation="zero_grad"
+        )
         loss_D.backward()
         self.optimizer_operator(names=["netD1", "netD2", "netD3"], operation="step")
 

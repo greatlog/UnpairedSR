@@ -25,11 +25,7 @@ class CycleGANModel(BaseModel):
         self.network_names = ["netG1", "netG2", "netD1"]
         self.networks = {}
 
-        self.loss_names = [
-            "g1d1_adv",
-            "g1g2_cycle",
-            "lr_tv"
-        ]
+        self.loss_names = ["g1d1_adv", "g1g2_cycle", "lr_tv"]
         self.loss_weights = {}
         self.losses = {}
         self.optimizers = {}
@@ -105,9 +101,7 @@ class CycleGANModel(BaseModel):
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
         loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
-        self.optimizer_operator(
-            names=["netG1", "netG2"], operation="zero_grad"
-        )
+        self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
         loss_trans.backward()
         self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 

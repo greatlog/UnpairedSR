@@ -31,7 +31,7 @@ class CinGANModel(BaseModel):
             "srg3_cycle",
             "g1d1_adv",
             "g1g2_cycle",
-            "lr_tv"
+            "lr_tv",
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -57,7 +57,7 @@ class CinGANModel(BaseModel):
                     if loss_conf["weight"] > 0:
                         self.loss_weights[name] = loss_conf.pop("weight")
                         self.losses[name] = self.build_loss(loss_conf)
-            
+
             # build optmizers
             self.set_train_state(self.networks, "train")
             optimizer_opt = train_opt["optimizers"]
@@ -110,9 +110,7 @@ class CinGANModel(BaseModel):
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
         loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
-        self.optimizer_operator(
-            names=["netG1", "netG2"], operation="zero_grad"
-        )
+        self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
         loss_trans.backward()
         self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 
@@ -138,7 +136,7 @@ class CinGANModel(BaseModel):
             )
             loss_dict["srd2_adv_g"] = srd2_adv_g.item()
             l_sr += srd2_adv_g
-        
+
         sr_tv_loss = self.losses["sr_tv"](self.fake_real_hr)
         loss_dict["sr_tv"] = sr_tv_loss.item()
         l_sr += sr_tv_loss

@@ -83,14 +83,14 @@ for test_loader in test_loaders:
 
         img_path = test_data["src_path"][0]
         img_name = img_path.split("/")[-1].split(".")[0]
-        
+
         sr_img = imresize(test_data["src"], opt["scale"])
         sr_img = util.tensor2img(sr_img)
 
-#        model.test(test_data["src"])
-#        visuals = model.get_current_visuals()
-#        sr_img = util.tensor2img(visuals["sr"])  # uint8
-#
+        #        model.test(test_data["src"])
+        #        visuals = model.get_current_visuals()
+        #        sr_img = util.tensor2img(visuals["sr"])  # uint8
+        #
         suffix = opt["suffix"]
         if suffix:
             save_img_path = os.path.join(dataset_dir, img_name + suffix + ".png")

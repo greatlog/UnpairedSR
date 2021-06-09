@@ -131,9 +131,7 @@ class CycleSRModel(BaseModel):
             loss_dict["sr_pix"] = loss_sr_pix.item()
             loss_trans += self.loss_weights["sr_pix"] * loss_sr_pix
 
-            self.optimizer_operator(
-                names=["netG1", "netG2"], operation="zero_grad"
-            )
+            self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
             loss_trans.backward()
             self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 

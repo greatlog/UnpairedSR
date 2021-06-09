@@ -6,9 +6,10 @@ from utils.registry import LOSS_REGISTRY
 
 from .vgg import VGGFeatureExtractor
 
+
 @LOSS_REGISTRY.register()
 class TVLoss(nn.Module):
-    def __init__(self,penealty="L1Loss"):
+    def __init__(self, penealty="L1Loss"):
         super().__init__()
         self.penealty = getattr(nn, penealty)()
 

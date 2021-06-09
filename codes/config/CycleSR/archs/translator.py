@@ -13,6 +13,7 @@ def default_conv(in_channels, out_channels, kernel_size, bias=True):
         in_channels, out_channels, kernel_size, padding=(kernel_size // 2), bias=bias
     )
 
+
 class BasicBlock(nn.Sequential):
     def __init__(
         self,
@@ -112,8 +113,7 @@ class Translator(nn.Module):
 
         # define body module
         m_body = [
-            ResBlock(conv, nf, 3, act=nn.ReLU(True), res_scale=1)
-            for _ in range(nb)
+            ResBlock(conv, nf, 3, act=nn.ReLU(True), res_scale=1) for _ in range(nb)
         ]
         m_body.append(conv(nf, nf, 3))
 
@@ -126,7 +126,7 @@ class Translator(nn.Module):
         self.head = nn.Sequential(*m_head)
         self.body = nn.Sequential(*m_body)
         self.tail = nn.Sequential(*m_tail)
-        
+
         nn.init.constant_(self.tail[-1].weight, 0)
         nn.init.constant_(self.tail[-1].bias, 0)
 

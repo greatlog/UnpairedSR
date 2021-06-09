@@ -6,11 +6,12 @@ import numpy as np
 import torch
 
 try:
-    sys.path.append('..')
+    sys.path.append("..")
     from utils import imresize
     import utils as util
 except ImportError:
     pass
+
 
 def generate_mod_LR_bic():
     # set parameters
@@ -34,7 +35,7 @@ def generate_mod_LR_bic():
         "pca_matrix": pca_matrix,
         "scale": up_scale,
         "cuda": True,
-        "rate_iso": 1.0
+        "rate_iso": 1.0,
     }
 
     # set random seed
@@ -87,7 +88,7 @@ def generate_mod_LR_bic():
     # kernel_map_tensor = torch.zeros((num_files, 1, 10)) # each kernel map: 1*10
 
     # prepare data with augementation
-    
+
     for i in range(num_files):
         filename = filepaths[i]
         print("No.{} -- Processing {}".format(i, filename))
@@ -104,15 +105,20 @@ def generate_mod_LR_bic():
         # LR_blur, by random gaussian kernel
         img_HR = util.img2tensor(image_HR)
         C, H, W = img_HR.size()
-        
+
         for sig in np.linspace(1.8, 3.2, 8):
 
             prepro = util.SRMDPreprocessing(sig=sig, **degradation_setting)
 
             LR_img, ker_map = prepro(img_HR.view(1, C, H, W))
             image_LR_blur = util.tensor2img(LR_img)
-            cv2.imwrite(os.path.join(saveLRblurpath, 'sig{}_{}'.format(sig,filename)), image_LR_blur)
-            cv2.imwrite(os.path.join(saveHRpath, 'sig{}_{}'.format(sig,filename)), image_HR)
+            cv2.imwrite(
+                os.path.join(saveLRblurpath, "sig{}_{}".format(sig, filename)),
+                image_LR_blur,
+            )
+            cv2.imwrite(
+                os.path.join(saveHRpath, "sig{}_{}".format(sig, filename)), image_HR
+            )
         # LR
         image_LR = imresize(image_HR, 1 / up_scale, True)
         # bic

@@ -31,7 +31,7 @@ class CGGANModel(BaseModel):
             "lr_percep",
             "sr_tv",
             "g1d1_adv",
-            "sr_pix"
+            "sr_pix",
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -57,7 +57,7 @@ class CGGANModel(BaseModel):
                     if loss_conf["weight"] > 0:
                         self.loss_weights[name] = loss_conf.pop("weight")
                         self.losses[name] = self.build_loss(loss_conf)
-            
+
             # build optmizers
             self.set_train_state(self.networks, "train")
             optimizer_opt = train_opt["optimizers"]
@@ -101,9 +101,7 @@ class CGGANModel(BaseModel):
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["g1d1_adv"] * g1_adv_loss
 
-        lr_percep, lr_style = self.losses["lr_percep"](
-            self.real_lr, self.fake_real_lr
-        )
+        lr_percep, lr_style = self.losses["lr_percep"](self.real_lr, self.fake_real_lr)
         loss_dict["lr_percep"] = lr_percep.item()
         if lr_style is not None:
             loss_dict["lr_style"] = lr_style.item()
@@ -120,9 +118,7 @@ class CGGANModel(BaseModel):
         loss_dict["sr_pix"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix"] * sr_pix
 
-        sr_percep, sr_style = self.losses["sr_percep"](
-            self.syn_hr, self.fake_real_hr
-        )
+        sr_percep, sr_style = self.losses["sr_percep"](self.syn_hr, self.fake_real_hr)
         loss_dict["sr_percep"] = sr_percep.item()
         if sr_style is not None:
             loss_dict["sr_style"] = sr_style.item()
@@ -133,9 +129,7 @@ class CGGANModel(BaseModel):
         loss_dict["sr_tv"] = sr_tv.item()
         loss_G = self.loss_weights["sr_tv"] * sr_tv
 
-        self.optimizer_operator(
-            names=["netG1", "netSR"], operation="zero_grad"
-        )
+        self.optimizer_operator(names=["netG1", "netSR"], operation="zero_grad")
         loss_G.backward()
         self.optimizer_operator(names=["netG1", "netSR"], operation="step")
 

@@ -114,9 +114,7 @@ class CycleGANModel(BaseModel):
         loss_dict["g2g1_cycle"] = g2g1_cycle.item()
         loss_trans += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
-        self.optimizer_operator(
-            names=["netG1", "netG2"], operation="zero_grad"
-        )
+        self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
         loss_trans.backward()
         self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 
