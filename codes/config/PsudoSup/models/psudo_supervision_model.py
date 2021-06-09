@@ -95,7 +95,7 @@ class PSSRModel(BaseModel):
         self.rec_syn_lr = self.netG1(self.fake_real_lr)
 
         self.fake_real_hr = self.netSR(self.fake_syn_lr)
-        self.fake_syn_hr = self.netSR(self.syn_lr)
+        self.fake_syn_hr = self.netSR(self.rec_real_lr)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
