@@ -14,8 +14,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/bicubicx4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -40,7 +40,7 @@ netSR:
   setting:
     nf: 64
     nb: 16
-    res_scale: 0.1
+    res_scale: 1
     upscale: 4
   pretrain: 
     path: ~
@@ -58,7 +58,7 @@ train:
   optimizers:
     netSR:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD:
    
   niter: 400000

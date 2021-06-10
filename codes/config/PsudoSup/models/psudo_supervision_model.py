@@ -123,6 +123,18 @@ class PSSRModel(BaseModel):
         loss_dict["g2g1_cycle"] = g2g1_cycle.item()
         loss_G += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
+        if self.losses.get("g1_idt"):
+            self.idt_syn_lr = self.G1(self.syn_lr)
+            g1_idt = self.losses["g1_idt"](self.idt_syn_lr, self.syn_lr)
+            loss_dict["g1_idt"] = g1_idt.item()
+            loss_G += self.loss_weights["g1_idt"] * g1_idt
+        
+        if self.losses.get("g2_idt"):
+            self.idt_real_lr = self.G2(self.real_lr)
+            g2_idt = self.losses["g2_idt"](self.idt_real_lr, self.real_lr)
+            loss_dict["g2_idt"] = g2_idt.item()
+            loss_G += self.loss_weights["g2_idt"] * g2_idt
+
         sr_pix = self.losses["sr_pix"](self.fake_syn_hr, self.syn_hr)
         loss_dict["sr_pix"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix"] * sr_pix

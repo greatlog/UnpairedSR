@@ -1,9 +1,9 @@
 #### general settings
-name: cyclesr_debug
+name: cggan
 use_tb_logger: false
-model: CycleSRModel
+model: CGGANModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [3]
 
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque] 
 
@@ -48,5 +48,5 @@ netSR:
     res_scale: 0.1
     upscale: 4
   pretrain: 
-    path: log/cyclesr/models/15000_netSR.pth
+    path: log/cggan/models/50000_netSR.pth
     strict_load: true

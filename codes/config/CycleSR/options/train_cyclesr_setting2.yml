@@ -1,9 +1,9 @@
 #### general settings
-name: cingan
+name: cyclesr_setting2
 use_tb_logger: false
-model: PSSRModel
+model: CycleSRModel
 scale: 4
-gpu_ids: [2]
+gpu_ids: [7]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -62,10 +62,9 @@ netG1:
   setting:
     nf: 64
     nb: 8
-    zero_tail: true
-    scale: 1
+    upscale: 1
   pretrain: 
-    path: ~
+    path: log/cyclegan_translation/models/latest_netG1.pth
     strict_load: true
 
 netD1:
@@ -76,20 +75,19 @@ netD1:
     nb: 3
     stride: 1
   pretrain: 
-    path: ~
+    path: log/cyclegan_translation/models/latest_netD1.pth
     strict_load: true
 
 netG2:
   which_network: Translator
   setting:
     nf: 64
-    nb: 16
-    zero_tail: true
-    scale: 1
+    nb: 8
+    upscale: 1
   pretrain: 
-    path: ~
+    path: log/cyclegan_translation/models/latest_netG2.pth
     strict_load: true
-  
+
 netD2:
   which_network: PatchGANDiscriminator
   setting:
@@ -97,50 +95,57 @@ netD2:
     nf: 64
     nb: 3
     stride: 1
+  pretrain: 
+    path: log/cyclegan_translation/models/latest_netD2.pth
+    strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
 
   losses:
-    sr_pix:
-      type: L1Loss
-      weight: 1
+    sr_adv:
+      type: GANLoss
+      gan_type: vanilla
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 0.0
 
-    srd3_adv:
+    sr_pix: 
+      type: L1Loss
+      weight: 1.0
+
+    sr_percep:
+      type: PerceptualLoss
+      layer_weights:
+        'conv5_4': 1  # before relu
+      vgg_type: vgg19
+      use_input_norm: true
+      range_norm: false
+      perceptual_weight: 1.0
+      style_weight: 0
+      criterion: l1
+      weight: !!float 0.0
+
+    g1_d1_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 0.1
 
-    g1_idt:
-      type: L1Loss
-      weight: 0.5 
-
-    g1d1_adv:
+    g2_d2_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 0.1
-    
+
     g1g2_cycle:
       type: L1Loss
       weight: 1.0
-    
-    g2_idt:
-      type: L1Loss
-      weight: 0.5
-    
-    g2d2_adv:
-      type: GANLoss
-      gan_type: vanilla
-      real_label_val: 1.0
-      fake_label_val: 0.0
-      weight: !!float 0.1
-    
-    g2g1_cycle:
+
+    g2g1_cycle: 
       type: L1Loss
       weight: 1.0
 
