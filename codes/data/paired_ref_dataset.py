@@ -40,15 +40,15 @@ class PairedRefDataset(data.Dataset):
                 )
             )
 
-        dataset_ratio = opt.get("ratio", len(self.ref_src_paths) / len(self.src_paths))
-        total_lentgh = int(dataset_ratio) * len(self.src_paths)
-
-        repeat_num = int(dataset_ratio) + 1
-        self.src_paths *= repeat_num
-        self.src_sizes *= repeat_num
-
-        self.src_paths = self.src_paths[:total_lentgh]
-        self.src_sizes = self.src_sizes[:total_lentgh]
+        if opt.get("ratios"):
+            ratio_ref, ratio_src = opt["ratios"]
+            self.ref_src_paths *= ref_ratio; self.ref_src_sizes *= ref_ratio
+            self.ref_tgt_paths *= ref_ratio; self.ref_tgt_sizes *= ref_ratio
+            self.src_paths *= ratio_src; self.src_sizes *= ratio_src
+        
+        merged_src = list(zip(self.src_paths, self.src_sizes))
+        random.shuffle(merged_src)
+        self.src_paths[:], self.src_sizes[:] = zip(*merged_src)
 
         if opt["data_type"] == "lmdb":
             self.lmdb_envs = False

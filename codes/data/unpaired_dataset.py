@@ -29,6 +29,11 @@ class UnPairedDataset(data.Dataset):
             opt["data_type"], opt["dataroot_tgt"]
         )
 
+        if opt.get("ratios"):
+            ratio_src, ratio_tgt = opt["ratios"]
+            self.src_paths *= ratio_src; self.src_sizes *= ratio_src
+            self.tgt_paths *= ratio_tgt; self.tgt_sizes *= ratio_tgt
+
         merged_src = list(zip(self.src_paths, self.src_sizes))
         random.shuffle(merged_src)
         self.src_paths[:], self.src_sizes[:] = zip(*merged_src)
