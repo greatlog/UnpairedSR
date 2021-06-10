@@ -139,7 +139,7 @@ class PSSRModel(BaseModel):
         loss_G.backward()
         self.optimizer_operator(names=["netG1", "netG2", "netSR"], operation="step")
 
-        ## update D1, D2
+        ## update D1, D2, D3
         self.set_requires_grad(["netD1", "netD2", "netD3"], True)
 
         loss_D = 0

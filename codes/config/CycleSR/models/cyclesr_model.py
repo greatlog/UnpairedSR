@@ -160,7 +160,7 @@ class CycleSRModel(BaseModel):
 
             sr_pix = self.losses["sr_pix"](self.syn_hr, self.fake_syn_hr)
             loss_dict["sr_pix"] = sr_pix.item()
-            l_sr += sr_pix
+            l_sr += self.loss_weights["sr_pix"] * sr_pix
 
             if self.losses.get("sr_adv"):
                 self.set_requires_grad(["netD3"], False)
@@ -168,7 +168,7 @@ class CycleSRModel(BaseModel):
                     self.netD3, self.losses["sr_adv"], self.syn_hr, self.fake_syn_hr
                 )
                 loss_dict["sr_adv_g"] = sr_adv_g.item()
-                l_sr += sr_adv_g
+                l_sr += self.loss_weights["sr_adv"] * sr_adv_g
 
             if self.losses.get("sr_percep"):
                 sr_percep, sr_style = self.losses["sr_percep"](

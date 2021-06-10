@@ -90,7 +90,7 @@ class CycleGANModel(BaseModel):
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
-        loss_trans = 0
+        loss_G = 0
         # set D fixed
         self.set_requires_grad(["netD1", "netD2"], False)
 
@@ -98,44 +98,44 @@ class CycleGANModel(BaseModel):
             self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
-        loss_trans += self.loss_weights["g1d1_adv"] * g1_adv_loss
+        loss_G += self.loss_weights["g1d1_adv"] * g1_adv_loss
 
         g2_adv_loss = self.calculate_rgan_loss_G(
             self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
         )
         loss_dict["g2_adv"] = g2_adv_loss.item()
-        loss_trans += self.loss_weights["g2d2_adv"] * g2_adv_loss
+        loss_G += self.loss_weights["g2d2_adv"] * g2_adv_loss
 
         g1g2_cycle = self.losses["g1g2_cycle"](self.rec_src, self.src)
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
-        loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
+        loss_G += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
         g2g1_cycle = self.losses["g2g1_cycle"](self.rec_tgt, self.tgt)
         loss_dict["g2g1_cycle"] = g2g1_cycle.item()
-        loss_trans += self.loss_weights["g2g1_cycle"] * g2g1_cycle
+        loss_G += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
         self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
-        loss_trans.backward()
+        loss_G.backward()
         self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 
         ## update D1, D2
         self.set_requires_grad(["netD1", "netD2"], True)
 
-        loss_d1d2 = 0
+        loss_D = 0
         loss_d1 = self.calculate_rgan_loss_D(
             self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
         )
         loss_dict["d1_adv"] = loss_d1.item()
-        loss_d1d2 += loss_d1
+        loss_D += loss_d1
 
         loss_d2 = self.calculate_rgan_loss_D(
             self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
         )
         loss_dict["d2_adv"] = loss_d2.item()
-        loss_d1d2 += loss_d2
+        loss_D += loss_d2
 
         self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
-        loss_d1d2.backward()
+        loss_D.backward()
         self.optimizer_operator(names=["netD1", "netD2"], operation="step")
 
         self.log_dict = loss_dict
