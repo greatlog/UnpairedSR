@@ -12,7 +12,7 @@ logger = logging.getLogger("base")
 
 
 @MODEL_REGISTRY.register()
-class CycleGANModel(BaseModel):
+class LatenTransModel(BaseModel):
     def __init__(self, opt):
         super().__init__(opt)
         if opt["dist"]:
@@ -22,16 +22,13 @@ class CycleGANModel(BaseModel):
 
         self.data_names = ["src", "tgt"]
 
-        self.network_names = ["netG1", "netG2", "netD1", "netD2"]
+        self.network_names = ["netG1", "Decoder", "Encoder", "netG2", "netD1", "netD2"]
         self.networks = {}
 
         self.loss_names = [
-            "g1d1_adv",
-            "g2d2_adv",
-            "g1_idt",
-            "g2_idt",
-            "g1g2_cycle",
-            "g2g1_cycle",
+            "lr_adv",
+            "sr_adv",
+            "cycle",
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -41,11 +38,14 @@ class CycleGANModel(BaseModel):
         self.netG1 = self.build_network(opt["netG1"])
         self.networks["netG1"] = self.netG1
 
+        self.Decoder = self.build_network(opt["Decoder"])
+        self.networks["Decoder"] = self.Decoder
+
         if self.is_train:
             train_opt = opt["train"]
 
             # build networks
-            for name in self.network_names[1:]:
+            for name in self.network_names[2:]:
                 setattr(self, name, self.build_network(opt[name]))
                 self.networks[name] = getattr(self, name)
 
@@ -77,60 +77,45 @@ class CycleGANModel(BaseModel):
             self.setup_schedulers(scheduler_opt)
 
             # set to training state
-            self.set_train_state(self.networks.keys(), "train")
+            self.set_train_state(["netG1", "netG2", "netD1", "netD2"], "train")
+            self.set_requires_grad(["Encoder", "Decoder"], False)
 
-    def feed_data(self, data):
+    def forward(self, data, step):
 
         self.src = data["src"].to(self.device)
         self.tgt = data["tgt"].to(self.device)
-    
-    def forward(self):
 
-        self.fake_tgt = self.netG1(self.src)
-        self.rec_src = self.netG2(self.fake_tgt)
-        self.fake_src = self.netG2(self.tgt)
-        self.rec_tgt = self.netG1(self.fake_src)
+        self.latent_code = self.Encoder(self.tgt)
+        self.fake_latent_code = self.netG1(self.src)
+
+        self.fake_tgt = self.Decoder(self.fake_latent_code)
+        if hasattr(self, "netG2"):
+            self.rec_src = self.netG2(self.fake_tgt)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
-
-        self.forward()
 
         loss_G = 0
         # set D fixed
         self.set_requires_grad(["netD1", "netD2"], False)
 
         g1_adv_loss = self.calculate_gan_loss_G(
-            self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
+            self.netD1, self.losses["lr_adv"],
+            self.latent_code.detach(), self.fake_latent_code
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
-        loss_G += self.loss_weights["g1d1_adv"] * g1_adv_loss
+        loss_G += self.loss_weights["lr_adv"] * g1_adv_loss
 
-        g2_adv_loss = self.calculate_gan_loss_G(
-            self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
+        sr_adv_loss = self.calculate_rgan_loss_G(
+            self.netD2, self.losses["sr_adv"], self.tgt, self.fake_tgt
         )
-        loss_dict["g2_adv"] = g2_adv_loss.item()
-        loss_G += self.loss_weights["g2d2_adv"] * g2_adv_loss
+        loss_dict["sr_adv"] = sr_adv_loss.item()
+        loss_G += self.loss_weights["sr_adv"] * sr_adv_loss
 
-        if self.losses.get("g1_idt"):
-            self.tgt_idt = self.netG1(self.tgt)
-            g1_idt = self.losses["g1_idt"](self.tgt, self.tgt_idt)
-            loss_dict["g1_idt"] = g1_idt.item()
-            loss_G += self.loss_weights["g1_idt"] * g1_idt
-        
-        if self.losses.get("g2_idt"):
-            self.src_idt = self.netG2(self.src)
-            g2_idt = self.losses["g2_idt"](self.src, self.src_idt)
-            loss_dict["g2_idt"] = g2_idt.item()
-            loss_G += self.loss_weights["g2_idt"] * g2_idt
-
-        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_src, self.src)
-        loss_dict["g1g2_cycle"] = g1g2_cycle.item()
-        loss_G += self.loss_weights["g1g2_cycle"] * g1g2_cycle
-
-        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_tgt, self.tgt)
-        loss_dict["g2g1_cycle"] = g2g1_cycle.item()
-        loss_G += self.loss_weights["g2g1_cycle"] * g2g1_cycle
+        if self.losses.get("cycle"):
+            cycle_loss = self.losses["cycle"](self.rec_src, self.src)
+            loss_dict["cycle"] = cycle_loss.item()
+            loss_G += self.loss_weights["cycle"] * cycle_loss
 
         self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
         loss_G.backward()
@@ -140,14 +125,15 @@ class CycleGANModel(BaseModel):
         self.set_requires_grad(["netD1", "netD2"], True)
 
         loss_D = 0
-        loss_d1 = self.calculate_gan_loss_D(
-            self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
+        loss_d1 = self.calculate_rgan_loss_D(
+            self.netD1, self.losses["lr_adv"],
+            self.latent_code.detach(), self.fake_latent_code
         )
         loss_dict["d1_adv"] = loss_d1.item()
         loss_D += loss_d1
 
-        loss_d2 = self.calculate_gan_loss_D(
-            self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
+        loss_d2 = self.calculate_rgan_loss_D(
+            self.netD2, self.losses["sr_adv"], self.tgt, self.fake_tgt
         )
         loss_dict["d2_adv"] = loss_d2.item()
         loss_D += loss_d2
@@ -203,10 +189,11 @@ class CycleGANModel(BaseModel):
 
     def test(self, src):
         self.src = src.to(self.device)
-        self.netG1.eval()
+        self.set_train_state(["netG1", "Decoder"], "eval")
         with torch.no_grad():
-            self.fake_tgt = self.netG1(self.src)
-        self.netG1.train()
+            self.fake_latent_code = self.netG1(self.src)
+            self.fake_tgt = self.Decoder(self.fake_latent_code)
+        self.set_train_state(["netG1", "Decoder"], "train")
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()

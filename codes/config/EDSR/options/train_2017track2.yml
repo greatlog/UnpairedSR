@@ -1,9 +1,9 @@
 #### general settings
-name: srgan_debug
+name: train2017_track2
 use_tb_logger: false
 model: SRModel
 scale: 4
-gpu_ids: [6]
+gpu_ids: [2]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,7 +15,7 @@ datasets:
     color: RGB
 
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/bicubicx4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -26,13 +26,13 @@ datasets:
     use_rot: true
 
   val:
-    name: Set5
+    name: 2017track2
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/Set5/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/Set5/HR/x4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 netSR:
@@ -40,53 +40,26 @@ netSR:
   setting:
     nf: 64
     nb: 16
-    res_scale: 0.1
+    res_scale: 1
     upscale: 4
   pretrain: 
     path: ~
     strict_load: true
-
-netD:
-  which_network: DiscriminatorVGG128
-  setting:
-    in_nc: 3
-    nf: 64
 
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
 
   losses:
-    sr_adv:
-      type: GANLoss
-      gan_type: vanilla
-      real_label_val: 1.0
-      fake_label_val: 0.0
-      weight: !!float 5e-3
-
     sr_pix: 
       type: L1Loss
-      weight: 1.0
-
-    sr_percep:
-      type: PerceptualLoss
-      layer_weights:
-        'conv5_4': 1  # before relu
-      vgg_type: vgg19
-      use_input_norm: true
-      range_norm: false
-      perceptual_weight: 1.0
-      style_weight: 0
-      criterion: l1
       weight: 1.0
 
   optimizers:
     netSR:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD:
-      type: Adam
-      lr: !!float 1e-4
    
   niter: 400000
   warmup_iter: -1  # no warm up
@@ -101,5 +74,5 @@ train:
 
 #### logger
 logger:
-  print_freq: 20
+  print_freq: 100
   save_checkpoint_freq: !!float 5e3

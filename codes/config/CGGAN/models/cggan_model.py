@@ -95,7 +95,7 @@ class CGGANModel(BaseModel):
         loss_G = 0
         self.set_requires_grad(["netD1", "netD2"], False)
 
-        g1_adv_loss = self.calculate_rgan_loss_G(
+        g1_adv_loss = self.calculate_gan_loss_G(
             self.netD1, self.losses["g1d1_adv"], self.real_lr, self.fake_real_lr
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
@@ -108,11 +108,12 @@ class CGGANModel(BaseModel):
         #     loss_G += self.loss_weights["sr_percep"] * lr_style
         # loss_G += self.loss_weights["sr_percep"] * lr_percep
 
-        sr_adv = self.calculate_rgan_loss_G(
-            self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
-        )
-        loss_dict["sr_adv"] = sr_adv.item()
-        loss_G += self.loss_weights["srd2_adv"] * sr_adv
+        if self.losses.get("srd2_adv"):
+            sr_adv = self.calculate_gan_loss_G(
+                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
+            )
+            loss_dict["sr_adv"] = sr_adv.item()
+            loss_G += self.loss_weights["srd2_adv"] * sr_adv
 
         sr_pix = self.losses["sr_pix"](self.fake_syn_hr, self.syn_hr)
         loss_dict["sr_pix"] = sr_pix.item()
@@ -137,24 +138,41 @@ class CGGANModel(BaseModel):
         self.set_requires_grad(["netD1", "netD2"], True)
 
         loss_D = 0
-        loss_d1 = self.calculate_rgan_loss_D(
+        loss_d1 = self.calculate_gan_loss_D(
             self.netD1, self.losses["g1d1_adv"], self.real_lr, self.fake_real_lr
         )
         loss_dict["d1_adv"] = loss_d1.item()
         loss_D += loss_d1
 
-        loss_D = 0
-        loss_d2 = self.calculate_rgan_loss_D(
-            self.netD2, self.losses["g1d1_adv"], self.syn_hr, self.fake_real_hr
-        )
-        loss_dict["d2_adv"] = loss_d2.item()
-        loss_D += loss_d2
+        if self.losses.get("srd2_adv"):
+            loss_d2 = self.calculate_gan_loss_D(
+                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
+            )
+            loss_dict["d2_adv"] = loss_d2.item()
+            loss_D += loss_d2
 
         self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
         loss_D.backward()
         self.optimizer_operator(names=["netD1", "netD2"], operation="step")
 
         self.log_dict = loss_dict
+    
+    def calculate_gan_loss_D(self, netD, criterion, real, fake):
+
+        d_pred_fake = netD(fake.detach())
+        d_pred_real = netD(real)
+
+        loss_real = criterion(d_pred_real, True, is_disc=True)
+        loss_fake = criterion(d_pred_fake, False, is_disc=True)
+
+        return (loss_real + loss_fake) / 2
+
+    def calculate_gan_loss_G(self, netD, criterion, real, fake):
+
+        d_pred_fake = netD(fake)
+        loss_real = criterion(d_pred_fake, True, is_disc=False)
+
+        return loss_real
 
     def calculate_rgan_loss_D(self, netD, criterion, real, fake):
 

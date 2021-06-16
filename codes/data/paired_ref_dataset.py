@@ -42,8 +42,8 @@ class PairedRefDataset(data.Dataset):
 
         if opt.get("ratios"):
             ratio_ref, ratio_src = opt["ratios"]
-            self.ref_src_paths *= ref_ratio; self.ref_src_sizes *= ref_ratio
-            self.ref_tgt_paths *= ref_ratio; self.ref_tgt_sizes *= ref_ratio
+            self.ref_src_paths *= ratio_ref; self.ref_src_sizes *= ratio_ref
+            self.ref_tgt_paths *= ratio_ref; self.ref_tgt_sizes *= ratio_ref
             self.src_paths *= ratio_src; self.src_sizes *= ratio_src
         
         merged_src = list(zip(self.src_paths, self.src_sizes))

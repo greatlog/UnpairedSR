@@ -15,7 +15,7 @@ datasets:
     color: RGB
     ratio: 1
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
     dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
     dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 

@@ -1,9 +1,9 @@
 #### general settings
-name: cyclesr
+name: cyclesr_setting2_valid
 use_tb_logger: false
 model: CycleSRModel
 scale: 4
-gpu_ids: [1]
+gpu_ids: [5]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,28 +13,28 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratio: 1
+    ratios: [1, 4]
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
     dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
-    batch_size: 32
+    batch_size: 64
     tgt_size: 128
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: 2017Track1
+    name: 2017Track2_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 netSR:
@@ -62,7 +62,8 @@ netG1:
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    zero_tail: true
+    scale: 1
   pretrain: 
     path: log/cyclegan_translation/models/latest_netG1.pth
     strict_load: true
@@ -83,7 +84,8 @@ netG2:
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    zero_tail: true
+    scale: 1
   pretrain: 
     path: log/cyclegan_translation/models/latest_netG2.pth
     strict_load: true
@@ -109,11 +111,11 @@ train:
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.5
+      weight: !!float 0.0
 
     sr_pix: 
-      type: L1Loss
-      weight: 1.0
+      type: MSELoss
+      weight: 1000.0
 
     sr_percep:
       type: PerceptualLoss
@@ -125,29 +127,37 @@ train:
       perceptual_weight: 1.0
       style_weight: 0
       criterion: l1
-      weight: !!float 1.0
+      weight: !!float 0.0
 
     g1_d1_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.5
+      weight: !!float 1.0
 
     g2_d2_adv:
       type: GANLoss
       gan_type: vanilla
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.5
+      weight: !!float 1.0
+    
+    g1_idt:
+      type: MSELoss
+      weight: 0.5
+    
+    g2_idt:
+      type: MSELoss
+      weight: 0.5
 
     g1g2_cycle:
-      type: L1Loss
-      weight: 1.0
+      type: MSELoss
+      weight: 10.0
 
     g2g1_cycle: 
-      type: L1Loss
-      weight: 1.0
+      type: MSELoss
+      weight: 10.0
 
   optimizers:
     netSR:
@@ -155,16 +165,16 @@ train:
       lr: !!float 1e-4
     netG1:
       type: Adam
-      lr: !!float 2e-4
+      lr: !!float 1e-4
     netG2:
       type: Adam
-      lr: !!float 2e-4
+      lr: !!float 1e-4
     netD1:
       type: Adam
-      lr: !!float 2e-4
+      lr: !!float 1e-4
     netD2:
       type: Adam
-      lr: !!float 2e-4
+      lr: !!float 1e-4
     netD3:
       type: Adam
       lr: !!float 1e-4
