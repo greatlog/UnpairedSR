@@ -11,8 +11,8 @@ sys.path.append("../")
 from utils import ProgressBar
 
 # configurations
-img_folder = "/mnt/hdd/lzx/SRDatasets/NTIRE2020/LR/x4_half/*"
-lmdb_save_path = "/mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb"
+img_folder = "/mnt/raid/lzx/SRDatasets/DIV2K_train/BicLR/x4_half/*"
+lmdb_save_path = "/mnt/raid/lzx/SRDatasets/DIV2K_train/BicLRx4_half.lmdb"
 meta_info = {"name": "biclrx4_half"}
 
 mode = (

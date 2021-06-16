@@ -3,7 +3,7 @@ name: sr_wild
 use_tb_logger: false
 model: SRModel
 scale: 4
-gpu_ids: [3]
+gpu_ids: [1]
 
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque]
 

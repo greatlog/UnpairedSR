@@ -3,7 +3,7 @@ name: sr_debug
 use_tb_logger: false
 model: SRModel
 scale: 4
-gpu_ids: [4]
+gpu_ids: [2]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -14,8 +14,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/DIV2K_train/BicLRx4_half.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -31,8 +31,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/Set5/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/Set5/HR/x4.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/Set5/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/Set5/HR/x4.lmdb
 
 #### network structures
 netSR:
@@ -40,10 +40,10 @@ netSR:
   setting:
     nf: 64
     nb: 16
-    res_scale: 1
+    res_scale: 0.1
     upscale: 4
   pretrain: 
-    path: ~
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
     strict_load: true
 
 #### training settings: learning rate scheme, loss
