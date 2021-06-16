@@ -3,7 +3,7 @@ name: cggan
 use_tb_logger: false
 model: CGGANModel
 scale: 4
-gpu_ids: [1]
+gpu_ids: [4]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,28 +13,28 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratio: 1
+    ratios: [1, 4]
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
     dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
-    batch_size: 32
+    batch_size: 64
     tgt_size: 128
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: 2017Track1
+    name: 2017Track2_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 netSR:
@@ -90,10 +90,10 @@ train:
 
     srd2_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.1
+      weight: !!float 1.0
     
     sr_tv:
       type: TVLoss
@@ -126,10 +126,10 @@ train:
 
     g1d1_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.5
+      weight: !!float 1.0
 
   optimizers:
     netSR:

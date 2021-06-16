@@ -3,17 +3,17 @@ name: sr_wild
 use_tb_logger: false
 model: SRModel
 scale: 4
-gpu_ids: [3]
+gpu_ids: [6]
 
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque]
 
 datasets:
   test1:
-    name: 2017Track1
+    name: 2017Track2_mini
     mode: PairedDataset
     data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
   # test2:
   #   name: Set14
   #   mode: PairedDataset

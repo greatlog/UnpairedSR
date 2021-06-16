@@ -41,7 +41,8 @@ netG1:
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    zero_tail: true
+    scale: 1
   pretrain: 
     path: ~
     strict_load: true
@@ -58,7 +59,8 @@ netG2:
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    zero_tail: true
+    scale: 1
   pretrain: 
     path: ~
     strict_load: true
@@ -77,17 +79,25 @@ train:
   losses:
     g1d1_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.5
+      weight: !!float 0.1
 
     g2d2_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.5
+      weight: !!float 0.1
+      
+    g1_idt:
+      type: L1Loss
+      weight: 0.5
+    
+    g2_idt:
+      type: L1Loss
+      weight: 0.5
 
     g1g2_cycle:
       type: L1Loss
@@ -100,16 +110,16 @@ train:
   optimizers:
     netG1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netG2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
   
   niter: 100000
   warmup_iter: -1  # no warm up

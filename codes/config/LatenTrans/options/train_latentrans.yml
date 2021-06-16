@@ -1,22 +1,21 @@
 #### general settings
-name: cyclesr_setting2
+name: latentrans
 use_tb_logger: false
-model: CycleSRModel
+model: LatenTransModel
 scale: 4
-gpu_ids: [7]
+gpu_ids: [5]
 metrics: [psnr, ssim]
 
 #### datasets
 datasets:
   train:
     name: DIV2K
-    mode: PairedRefDataset
+    mode: UnPairedDataset
     data_type: lmdb
     color: RGB
     ratio: 1
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/train_HR_half.lmdb
-    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
     dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
@@ -28,33 +27,33 @@ datasets:
     use_rot: true
 
   val:
-    name: 2017Track1
+    name: 2017Track2_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
-netSR:
-  which_network: EDSR
+Encoder:
+  which_network: Encoder
+  setting:
+    nf: 64
+    nb: 8
+    scale_factor: 4
+  pretrain: 
+    path: ../../../checkpoints/AutoEncoder/encoderx4_8b16b.pth
+    strict_load: true
+
+Decoder:
+  which_network: Decoder
   setting:
     nf: 64
     nb: 16
-    res_scale: 0.1
-    upscale: 4
+    scale_factor: 4
   pretrain: 
-    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
-    strict_load: true
-
-netD3:
-  which_network: PatchGANDiscriminator
-  setting:
-    in_c: 3
-    nf: 64
-    nb: 3
-    stride: 1
+    path: ../../../checkpoints/AutoEncoder/decoderx4_8b16b.pth
   
 #### network structures  
 netG1:
@@ -62,9 +61,9 @@ netG1:
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    scale: 1
   pretrain: 
-    path: log/cyclegan_translation/models/latest_netG1.pth
+    path: ~
     strict_load: true
 
 netD1:
@@ -75,7 +74,7 @@ netD1:
     nb: 3
     stride: 1
   pretrain: 
-    path: log/cyclegan_translation/models/latest_netD1.pth
+    path: ~
     strict_load: true
 
 netG2:
@@ -83,9 +82,10 @@ netG2:
   setting:
     nf: 64
     nb: 8
-    upscale: 1
+    zero_tail: true
+    scale: 0.25
   pretrain: 
-    path: log/cyclegan_translation/models/latest_netG2.pth
+    path: ~
     strict_load: true
 
 netD2:
@@ -96,7 +96,7 @@ netD2:
     nb: 3
     stride: 1
   pretrain: 
-    path: log/cyclegan_translation/models/latest_netD2.pth
+    path: ~
     strict_load: true
 
 #### training settings: learning rate scheme, loss
@@ -106,53 +106,23 @@ train:
   losses:
     sr_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.0
-
-    sr_pix: 
-      type: L1Loss
-      weight: 1.0
-
-    sr_percep:
-      type: PerceptualLoss
-      layer_weights:
-        'conv5_4': 1  # before relu
-      vgg_type: vgg19
-      use_input_norm: true
-      range_norm: false
-      perceptual_weight: 1.0
-      style_weight: 0
-      criterion: l1
-      weight: !!float 0.0
-
-    g1_d1_adv:
+      weight: !!float 1.0
+    
+    lr_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.1
+      weight: !!float 1.0
 
-    g2_d2_adv:
-      type: GANLoss
-      gan_type: vanilla
-      real_label_val: 1.0
-      fake_label_val: 0.0
-      weight: !!float 0.1
-
-    g1g2_cycle:
-      type: L1Loss
-      weight: 1.0
-
-    g2g1_cycle: 
+    cycle: 
       type: L1Loss
       weight: 1.0
 
   optimizers:
-    netSR:
-      type: Adam
-      lr: !!float 1e-4
     netG1:
       type: Adam
       lr: !!float 1e-4
@@ -165,10 +135,7 @@ train:
     netD2:
       type: Adam
       lr: !!float 1e-4
-    netD3:
-      type: Adam
-      lr: !!float 1e-4
-  
+   
   niter: 100000
   warmup_iter: -1  # no warm up
 

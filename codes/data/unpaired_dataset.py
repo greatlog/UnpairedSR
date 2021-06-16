@@ -100,10 +100,10 @@ class UnPairedDataset(data.Dataset):
             ]
 
             H, W, C = img_tgt.shape
-            rnd_h = random.randint(0, max(0, H - cropped_src_size))
-            rnd_w = random.randint(0, max(0, W - cropped_src_size))
+            rnd_h = random.randint(0, max(0, H - cropped_tgt_size))
+            rnd_w = random.randint(0, max(0, W - cropped_tgt_size))
             img_tgt = img_tgt[
-                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
+                rnd_h : rnd_h + cropped_tgt_size, rnd_w : rnd_w + cropped_tgt_size, :
             ]
 
             # augmentation - flip, rotate
