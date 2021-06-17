@@ -87,7 +87,7 @@ class CGGANModel(BaseModel):
 
         self.fake_real_lr = self.netG1(self.syn_lr)
         self.fake_syn_hr = self.netSR(self.fake_real_lr)
-        self.fake_real_hr = self.netSR(self.real_lr)
+        # self.fake_real_hr = self.netSR(self.real_lr)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
@@ -101,16 +101,17 @@ class CGGANModel(BaseModel):
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["g1d1_adv"] * g1_adv_loss
 
-        # lr_percep, lr_style = self.losses["lr_percep"](self.real_lr, self.fake_real_lr)
-        # loss_dict["lr_percep"] = lr_percep.item()
-        # if lr_style is not None:
-        #     loss_dict["lr_style"] = lr_style.item()
-        #     loss_G += self.loss_weights["sr_percep"] * lr_style
-        # loss_G += self.loss_weights["sr_percep"] * lr_percep
+        if self.losses.get("lr_percep"):
+            lr_percep, lr_style = self.losses["lr_percep"](self.real_lr, self.fake_real_lr)
+            loss_dict["lr_percep"] = lr_percep.item()
+            if lr_style is not None:
+                loss_dict["lr_style"] = lr_style.item()
+                loss_G += self.loss_weights["sr_percep"] * lr_style
+            loss_G += self.loss_weights["sr_percep"] * lr_percep
 
         if self.losses.get("srd2_adv"):
             sr_adv = self.calculate_gan_loss_G(
-                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
+                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_syn_hr
             )
             loss_dict["sr_adv"] = sr_adv.item()
             loss_G += self.loss_weights["srd2_adv"] * sr_adv
@@ -119,16 +120,19 @@ class CGGANModel(BaseModel):
         loss_dict["sr_pix"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix"] * sr_pix
 
-        # sr_percep, sr_style = self.losses["sr_percep"](self.syn_hr, self.fake_real_hr)
-        # loss_dict["sr_percep"] = sr_percep.item()
-        # if sr_style is not None:
-        #     loss_dict["sr_style"] = sr_style.item()
-        #     loss_G += self.loss_weights["sr_percep"] * sr_style
-        # loss_G += self.loss_weights["sr_percep"] * sr_percep
+        if self.losses.get("sr_percep"):
+            sr_percep, sr_style = self.losses["sr_percep"](self.syn_hr, self.fake_syn_hr)
+            loss_dict["sr_percep"] = sr_percep.item()
+            if sr_style is not None:
+                loss_dict["sr_style"] = sr_style.item()
+                loss_G += self.loss_weights["sr_percep"] * sr_style
+            loss_G += self.loss_weights["sr_percep"] * sr_percep
 
-        # sr_tv = self.losses["sr_tv"](self.fake_real_hr)
-        # loss_dict["sr_tv"] = sr_tv.item()
-        # loss_G = self.loss_weights["sr_tv"] * sr_tv
+        
+        if self.losses.get("sr_tv"):
+            sr_tv = self.losses["sr_tv"](self.fake_real_hr)
+            loss_dict["sr_tv"] = sr_tv.item()
+            loss_G = self.loss_weights["sr_tv"] * sr_tv
 
         self.optimizer_operator(names=["netG1", "netSR"], operation="zero_grad")
         loss_G.backward()
@@ -146,7 +150,7 @@ class CGGANModel(BaseModel):
 
         if self.losses.get("srd2_adv"):
             loss_d2 = self.calculate_gan_loss_D(
-                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
+                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_syn_hr
             )
             loss_dict["d2_adv"] = loss_d2.item()
             loss_D += loss_d2
