@@ -103,13 +103,17 @@ class Upsampler(nn.Sequential):
 
 @ARCH_REGISTRY.register()
 class Translator(nn.Module):
-    def __init__(self, nb, nf, upscale=4, conv=default_conv):
+    def __init__(self, nb, nf, scale=4, zero_tail=False, conv=default_conv):
         super().__init__()
 
-        self.upscale = upscale
+        self.scale = scale
 
         # define head module
-        m_head = [conv(3, nf, 3)]
+        if scale >= 1:
+            m_head = [conv(3, nf, 3)]
+        else:
+            s = int(1 / scale)
+            m_head = [nn.Conv2d(3, nf, kernel_size=2 * s + 1, stride=s, padding=s)]
 
         # define body module
         m_body = [
@@ -119,7 +123,7 @@ class Translator(nn.Module):
 
         # define tail module
         m_tail = [
-            Upsampler(conv, upscale, nf, act=False),
+            Upsampler(conv, scale, nf, act=False) if scale > 1 else nn.Identity(),
             conv(nf, 3, 3),
         ]
 
@@ -127,8 +131,9 @@ class Translator(nn.Module):
         self.body = nn.Sequential(*m_body)
         self.tail = nn.Sequential(*m_tail)
 
-        nn.init.constant_(self.tail[-1].weight, 0)
-        nn.init.constant_(self.tail[-1].bias, 0)
+        if zero_tail:
+            nn.init.constant_(self.tail[-1].weight, 0)
+            nn.init.constant_(self.tail[-1].bias, 0)
 
     def forward(self, x):
 
@@ -136,8 +141,8 @@ class Translator(nn.Module):
         f = self.body(f)
         f = self.tail(f)
 
-        if self.upscale == 1:
+        if self.scale == 1:
             x = f + x
         else:
-            x = F.interpolate(x, scale_factor=self.upscale)
+            x = f + F.interpolate(x, scale_factor=self.scale)
         return x
