@@ -13,27 +13,27 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 4]
+    ratios: [4, 1]
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
-    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
-    batch_size: 64
+    batch_size: 32
     tgt_size: 128
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: 2017Track2_mini
+    name: 2020Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -94,11 +94,11 @@ train:
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 1.0
-    
+
     sr_tv:
       type: TVLoss
       penealty: L1Loss
-      weight: 0.1
+      weight: 0.0
     
     sr_percep:
       type: PerceptualLoss
@@ -110,7 +110,7 @@ train:
       perceptual_weight: 1.0
       style_weight: 0
       criterion: l1
-      weight: !!float 0.01
+      weight: !!float 0.1
     
     lr_percep:
       type: PerceptualLoss
@@ -122,7 +122,7 @@ train:
       perceptual_weight: 1.0
       style_weight: 0
       criterion: l1
-      weight: !!float 0.01
+      weight: !!float 0.0
 
     g1d1_adv:
       type: GANLoss
