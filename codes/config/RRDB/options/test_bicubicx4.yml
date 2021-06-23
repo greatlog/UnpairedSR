@@ -1,0 +1,60 @@
+#### general settings
+name: sr_bicubic_x4
+use_tb_logger: false
+model: SRModel
+scale: 4
+gpu_ids: [6]
+
+metrics: [psnr, ssim]
+
+datasets:
+  test1:
+    name: Set5
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/Set5/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/Set5/HR/x4.lmdb
+  test2:
+    name: Set14
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/Set14/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/Set14/HR/x4.lmdb
+  test3:
+    name: BSDS100
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/BSDS100/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/BSDS100/HR/x4.lmdb
+  test4:
+    name: urban100
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/urban100/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/urban100/HR/x4.lmdb
+  test5:
+    name: manga109
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/manga109/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/manga109/HR/x4.lmdb
+  test6:
+    name: div2k
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+
+#### network structures
+netSR:
+  which_network: RRDBNet
+  setting:
+    in_nc: 3
+    out_nc: 3
+    nf: 64
+    nb: 23
+    gc: 32
+    upscale: 4
+  pretrain: 
+    path: ../../../checkpoints/ESRGAN/RRDB_PSNR_x4.pth
+    strict_load: true
