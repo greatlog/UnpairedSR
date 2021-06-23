@@ -139,6 +139,12 @@ class BaseModel:
     def set_train_state(self, names, state):
         for name in names:
             getattr(self.networks[name], state)()
+    
+    def clip_grad_norm(self, names, norm):
+        for name in names:
+            nn.utils.clip_grad_norm_(
+                self.networks[name].parameters(), max_norm=norm
+            )
 
     def _set_lr(self, lr_groups_l):
         """set learning rate for warmup,

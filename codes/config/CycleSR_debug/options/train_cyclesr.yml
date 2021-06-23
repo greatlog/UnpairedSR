@@ -13,11 +13,11 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 4]
+    ratios: [1, 1]
 
-    dataroot_ref_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
-    dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_ref_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/trainx4.lmdb
 
     use_shuffle: true
     n_workers: 12  # per GPU
@@ -65,7 +65,7 @@ netG1:
     zero_tail: true
     scale: 1
   pretrain: 
-    path: ~ # log/cyclegan_translation/models/latest_netG1.pth
+    path: log/cyclegan_translation/models/latest_netG1.pth
     strict_load: true
 
 netD1:
@@ -76,7 +76,7 @@ netD1:
     nb: 3
     stride: 1
   pretrain: 
-    path: ~ # log/cyclegan_translation/models/latest_netD1.pth
+    path: log/cyclegan_translation/models/latest_netD1.pth
     strict_load: true
 
 netG2:
@@ -87,7 +87,7 @@ netG2:
     zero_tail: true
     scale: 1
   pretrain: 
-    path: ~ # log/cyclegan_translation/models/latest_netG2.pth
+    path: log/cyclegan_translation/models/latest_netG2.pth
     strict_load: true
 
 netD2:
@@ -98,7 +98,7 @@ netD2:
     nb: 3
     stride: 1
   pretrain: 
-    path: ~ # log/cyclegan_translation/models/latest_netD2.pth
+    path: log/cyclegan_translation/models/latest_netD2.pth
     strict_load: true
 
 #### training settings: learning rate scheme, loss
@@ -114,8 +114,8 @@ train:
       weight: !!float 0.0
 
     sr_pix: 
-      type: L1Loss
-      weight: 1.0
+      type: MSELoss
+      weight: 1000.0
 
     sr_percep:
       type: PerceptualLoss
@@ -134,31 +134,32 @@ train:
       gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.1
+      weight: !!float 1.0
 
     g2_d2_adv:
       type: GANLoss
       gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.1
+      weight: !!float 1.0
     
     g1_idt:
       type: L1Loss
-      weight: 0.05
+      weight: 5
     
     g2_idt:
       type: L1Loss
-      weight: 0.05
+      weight: 5
 
     g1g2_cycle:
       type: L1Loss
-      weight: 1.0
+      weight: 10.0
 
     g2g1_cycle: 
       type: L1Loss
-      weight: 1.0
+      weight: 10.0
 
+  max_grad_norm: 50.0
   optimizers:
     netSR:
       type: Adam
@@ -166,19 +167,19 @@ train:
       betas: [0.5, 0.999]
     netG1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
       betas: [0.5, 0.999]
     netG2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
       betas: [0.5, 0.999]
     netD1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
       betas: [0.5, 0.999]
     netD2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
       betas: [0.5, 0.999]
     netD3:
       type: Adam

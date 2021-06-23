@@ -124,7 +124,7 @@ class DiscriminatorVGG32(nn.Module):
 class PatchGANDiscriminator(nn.Module):
     """Defines a PatchGAN discriminator"""
 
-    def __init__(self, in_c, nf, nb, stride=1, norm_layer=nn.BatchNorm2d):
+    def __init__(self, in_c, nf, nb, stride=1, norm_layer=nn.InstanceNorm2d):
         """Construct a PatchGAN discriminator
 
         Parameters:
