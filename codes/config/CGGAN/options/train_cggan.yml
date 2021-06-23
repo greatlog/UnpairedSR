@@ -86,14 +86,14 @@ train:
   losses:
     sr_pix:
       type: L1Loss
-      weight: 1.0
+      weight: 10.0
 
     srd2_adv:
       type: GANLoss
       gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 1.0
+      weight: !!float 1
 
     sr_tv:
       type: TVLoss
@@ -110,7 +110,7 @@ train:
       perceptual_weight: 1.0
       style_weight: 0
       criterion: l1
-      weight: !!float 0.1
+      weight: !!float 0.0
     
     lr_percep:
       type: PerceptualLoss
@@ -154,9 +154,9 @@ train:
     gamma: 0.5
 
   manual_seed: 0
-  val_freq: !!float 5e3
+  val_freq: !!float 2.5e3
 
 #### logger
 logger:
-  print_freq: 100
+  print_freq: 20
   save_checkpoint_freq: !!float 5e3
