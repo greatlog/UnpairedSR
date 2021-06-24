@@ -13,7 +13,6 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratio: 8
     ratios: [1, 4]
 
     dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb

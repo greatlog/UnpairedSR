@@ -83,7 +83,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
         if args.dist_url == "env://" and args.rank == -1:
             rank = int(os.environ["RANK"])
 
-        rank = rank * ngpus_per_node + gpu
+        rank = args.rank * ngpus_per_node + gpu
         print(
             "Init process group: dist_url: {}, world_size: {}, rank: {}".format(
                 args.dist_url, args.world_size, rank
@@ -171,7 +171,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             total_epochs = int(math.ceil(total_iters / train_size))
 
             if opt["dist"]:
-                train_sampler = DistIterSampler(train_set, world_size, rank)
+                train_sampler = DistIterSampler(train_set, args.world_size, rank)
                 total_epochs = int(math.ceil(total_iters / train_size))
             else:
                 train_sampler = None
@@ -232,7 +232,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             if current_step > total_iters:
                 break
 
-            model.forward(train_data, current_step)
+            model.feed_data(train_data)
             model.optimize_parameters(current_step)
             model.update_learning_rate(
                 current_step, warmup_iter=opt["train"]["warmup_iter"]

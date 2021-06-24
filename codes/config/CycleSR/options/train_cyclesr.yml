@@ -13,11 +13,11 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 1]
+    ratios: [1, 4]
 
-    dataroot_ref_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_target.lmdb
-    dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/trainx4.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
 
     use_shuffle: true
     n_workers: 12  # per GPU
@@ -28,13 +28,13 @@ datasets:
     use_rot: true
 
   val:
-    name: 2017Track2_mini
+    name: 2020Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 netSR:
