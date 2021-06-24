@@ -1,9 +1,9 @@
 #### general settings
-name: cyclegan_translation
+name: translation
 use_tb_logger: false
 model: CycleGANModel
 scale: 1
-gpu_ids: [4]
+gpu_ids: [0]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -14,12 +14,13 @@ datasets:
     data_type: lmdb
     color: RGB
     ratio: 8
+    ratios: [1, 4]
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
 
     use_shuffle: true
-    n_workers: 4  # per GPU
+    n_workers: 8  # per GPU
     batch_size: 32
     tgt_size: 32
     src_size: 32
@@ -33,7 +34,7 @@ datasets:
     color: RGB
 
     dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_valid_input.lmdb
 
 #### network structures  
 netG1:
@@ -53,6 +54,9 @@ netD1:
     in_c: 3
     nf: 64
     nb: 3
+  pretrain:
+    path: ~
+    strict_load: true
 
 netG2:
   which_network: Translator
@@ -61,7 +65,7 @@ netG2:
     nb: 8
     zero_tail: true
     scale: 1
-  pretrain: 
+  pretrain:
     path: ~
     strict_load: true
 
@@ -71,6 +75,9 @@ netD2:
     in_c: 3
     nf: 64
     nb: 3
+  pretrain:
+    path: ~
+    strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
@@ -82,30 +89,30 @@ train:
       gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.1
+      weight: !!float 1.0
 
     g2d2_adv:
       type: GANLoss
       gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 0.1
+      weight: !!float 1.0
       
     g1_idt:
       type: L1Loss
-      weight: 0.5
+      weight: 5.0
     
     g2_idt:
       type: L1Loss
-      weight: 0.5
+      weight: 5.0
 
     g1g2_cycle:
       type: L1Loss
-      weight: 1.0
+      weight: 10.0
 
     g2g1_cycle: 
       type: L1Loss
-      weight: 1.0
+      weight: 10.0
 
   optimizers:
     netG1:

@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from utils.registry import MODEL_REGISTRY
 
-from .base_model import BaseModel
+from models.base_model import BaseModel
 
 logger = logging.getLogger("base")
 

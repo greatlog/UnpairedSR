@@ -66,6 +66,7 @@ class CycleSRModel(BaseModel):
                         self.losses[name] = self.build_loss(loss_conf)
 
             # build optmizers
+            self.max_grad_norm = train_opt["max_grad_norm"]
             self.set_train_state(self.networks, "train")
             optimizer_opt = train_opt["optimizers"]
             for name in self.network_names:
@@ -102,14 +103,15 @@ class CycleSRModel(BaseModel):
         self.rec_real_lr = self.netG1(self.fake_syn_lr)
     
     def forward_sr(self):
-        self.fake_real_lr = self.netG1(self.syn_lr)
+        # self.fake_real_lr = self.netG1(self.syn_lr)
         self.fake_syn_hr = self.netSR(self.fake_real_lr.detach())
     
     def optimize_trans_models(self, step, loss_dict):
-        loss_trans = 0
         # set D fixed
         self.set_requires_grad(["netD1", "netD2", "netSR"], False)
         self.forward_trans()
+
+        loss_trans = 0
 
         g1_adv_loss = self.calculate_gan_loss_G(
             self.netD1, self.losses["g1_d1_adv"], self.real_lr, self.fake_real_lr
@@ -149,6 +151,7 @@ class CycleSRModel(BaseModel):
 
         self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
         loss_trans.backward()
+        self.clip_grad_norm(["netG1", "netG2"], self.max_grad_norm)
         self.optimizer_operator(names=["netG1", "netG2"], operation="step")
 
         ## update D1, D2
@@ -169,6 +172,7 @@ class CycleSRModel(BaseModel):
 
         self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
         loss_d1d2.backward()
+        self.clip_grad_norm(["netD1", "netD2"], self.max_grad_norm)
         self.optimizer_operator(names=["netD1", "netD2"], operation="step")
 
         return loss_dict
@@ -204,6 +208,7 @@ class CycleSRModel(BaseModel):
 
         self.optimizer_operator(names=["netSR"], operation="zero_grad")
         l_sr.backward()
+        self.clip_grad_norm(["netSR"], self.max_grad_norm)
         self.optimizer_operator(names=["netSR"], operation="step")
 
         if self.losses.get("sr_adv"):
@@ -222,7 +227,7 @@ class CycleSRModel(BaseModel):
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
-        # loss_dict = self.optimize_trans_models(step, loss_dict)
+        loss_dict = self.optimize_trans_models(step, loss_dict)
         loss_dict = self.optimize_sr_models(step, loss_dict)
 
         for k, v in loss_dict.items():
