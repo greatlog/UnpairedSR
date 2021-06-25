@@ -1,5 +1,5 @@
 #### general settings
-name: cggan
+name: cggan_15000
 use_tb_logger: false
 model: CGGANModel
 scale: 4
@@ -48,5 +48,5 @@ netSR:
     res_scale: 0.1
     upscale: 4
   pretrain: 
-    path: log/cggan/models/latest_netSR.pth
+    path: log/cggan/models/15000_netSR.pth
     strict_load: true

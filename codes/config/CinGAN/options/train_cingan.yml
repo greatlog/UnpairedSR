@@ -3,7 +3,7 @@ name: cingan
 use_tb_logger: false
 model: CinGANModel
 scale: 4
-gpu_ids: [5]
+gpu_ids: [7]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,7 +13,7 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 4]
+    ratios: [4, 1]
 
     dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
     dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
@@ -27,7 +27,7 @@ datasets:
     use_flip: true
     use_rot: true
 
- val:
+  val:
     name: 2020Track1_mini
     mode: PairedDataset
     data_type: lmdb
@@ -64,7 +64,7 @@ netG1:
     nb: 8
     scale: 1
   pretrain: 
-    path: log/cyclegan_translation/models/latest_netG1.pth
+    path: log/translation/models/latest_netG1.pth
     strict_load: true
 
 netD1:
@@ -75,7 +75,7 @@ netD1:
     nb: 3
     stride: 1
   pretrain: 
-    path: log/cyclegan_translation/models/latest_netD1.pth
+    path: log/translation/models/latest_netD1.pth
     strict_load: true
 
 netG2:
@@ -83,9 +83,10 @@ netG2:
   setting:
     nf: 64
     nb: 8
+    zero_tail: true
     scale: 1
   pretrain: 
-    path: log/cyclegan_translation/models/latest_netG2.pth
+    path: log/translation/models/latest_netG2.pth
     strict_load: true
 
 netG3:
@@ -93,6 +94,7 @@ netG3:
   setting:
     nf: 64
     nb: 8
+    zero_tail: true
     scale: 0.25
   pretrain: 
     path: ~
@@ -106,7 +108,7 @@ train:
   losses:
     srd2_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 0.5
@@ -122,7 +124,7 @@ train:
 
     g1d1_adv:
       type: GANLoss
-      gan_type: vanilla
+      gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 0.1

@@ -161,19 +161,19 @@ class PSSRModel(BaseModel):
             self.netD1, self.losses["g1d1_adv"], self.syn_lr, self.fake_syn_lr
         )
         loss_dict["d1_adv"] = loss_d1.item()
-        loss_D += loss_d1
+        loss_D += self.loss_weights["g1d1_adv"] * loss_d1
 
         loss_d2 = self.calculate_gan_loss_D(
             self.netD2, self.losses["g2d2_adv"], self.real_lr, self.fake_real_lr
         )
         loss_dict["d2_adv"] = loss_d2.item()
-        loss_D += loss_d2
+        loss_D += self.loss_weights["g2d2_adv"] * loss_d2
 
         loss_d3 = self.calculate_gan_loss_D(
             self.netD3, self.losses["srd3_adv"], self.syn_hr, self.fake_real_hr
         )
         loss_dict["d3_adv"] = loss_d3.item()
-        loss_D += loss_d3
+        loss_D += self.loss_weights["srd3_adv"] * loss_d3
 
         self.optimizer_operator(
             names=["netD1", "netD2", "netD3"], operation="zero_grad"
