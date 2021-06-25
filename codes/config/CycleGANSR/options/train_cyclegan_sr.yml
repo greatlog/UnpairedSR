@@ -1,9 +1,9 @@
 #### general settings
-name: translation
+name: CycleGANSR
 use_tb_logger: false
 model: CycleGANModel
-scale: 1
-gpu_ids: [0]
+scale: 4
+gpu_ids: [1]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,36 +15,36 @@ datasets:
     color: RGB
     ratios: [1, 4]
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_target.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
     batch_size: 32
-    tgt_size: 32
+    tgt_size: 128
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: DIV2K
+    name: 2020Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_valid_input.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures  
 netG1:
-  which_network: Translator
+  which_network: EDSR
   setting:
     nf: 64
-    nb: 8
-    zero_tail: true
-    scale: 1
+    nb: 16
+    res_scale: 0.1
+    upscale: 4
   pretrain: 
-    path: ~
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
     strict_load: true
 
 netD1:
@@ -63,7 +63,7 @@ netG2:
     nf: 64
     nb: 8
     zero_tail: true
-    scale: 1
+    scale: 0.25
   pretrain:
     path: ~
     strict_load: true
