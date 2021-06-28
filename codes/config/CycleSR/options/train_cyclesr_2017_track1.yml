@@ -1,9 +1,9 @@
 #### general settings
-name: cyclesr
+name: CycleSR2017Track1
 use_tb_logger: false
 model: CycleSRModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [4]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,14 +13,14 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratios: [4, 1]
+    ratios: [1, 1]
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
-    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
+    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
-    n_workers: 12  # per GPU
+    n_workers: 4  # per GPU
     batch_size: 32
     tgt_size: 128
     src_size: 32
@@ -28,12 +28,12 @@ datasets:
     use_rot: true
 
   val:
-    name: 2020Track1_mini
+    name: 2017Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -65,7 +65,7 @@ netG1:
     zero_tail: true
     scale: 1
   pretrain: 
-    path: log/translation/models/latest_netG1.pth
+    path: ~
     strict_load: true
 
 netD1:
@@ -76,7 +76,7 @@ netD1:
     nb: 3
     stride: 1
   pretrain: 
-    path: log/translation/models/latest_netD1.pth
+    path: ~
     strict_load: true
 
 netG2:
@@ -87,7 +87,7 @@ netG2:
     zero_tail: true
     scale: 1
   pretrain: 
-    path: log/translation/models/latest_netG2.pth
+    path: ~
     strict_load: true
 
 netD2:
@@ -98,7 +98,7 @@ netD2:
     nb: 3
     stride: 1
   pretrain: 
-    path: log/translation/models/latest_netD2.pth
+    path: ~
     strict_load: true
 
 #### training settings: learning rate scheme, loss
