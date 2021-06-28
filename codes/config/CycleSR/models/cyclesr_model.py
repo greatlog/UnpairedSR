@@ -125,7 +125,7 @@ class CycleSRModel(BaseModel):
         loss_dict["g2_adv"] = g2_adv_loss.item()
         loss_trans += self.loss_weights["g2_d2_adv"] * g2_adv_loss
 
-        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_real_lr, self.real_lr)
+        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_syn_lr, self.syn_lr)
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
         loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
@@ -141,7 +141,7 @@ class CycleSRModel(BaseModel):
             loss_dict["g2_idt"] = g2_idt.item()
             loss_trans += self.loss_weights["g2_idt"] * g2_idt
 
-        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_syn_lr, self.syn_lr)
+        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_real_lr, self.real_lr)
         loss_dict["g2g1_cycle"] = g2g1_cycle.item()
         loss_trans += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
