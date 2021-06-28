@@ -217,9 +217,10 @@ class CycleSRModel(BaseModel):
                 self.netD3, self.losses["sr_adv"], self.syn_hr, self.fake_syn_hr
             )
             loss_dict["sr_adv_d"] = sr_adv_d.item()
+            loss_D = self.loss_weights["sr_adv"] * sr_adv_d
 
             self.optimizers["netD3"].zero_grad()
-            sr_adv_d.backward()
+            loss_D.backward()
             self.optimizers["netD3"].step()
         
         return loss_dict

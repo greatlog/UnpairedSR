@@ -3,7 +3,7 @@ name: CycleGANSR
 use_tb_logger: false
 model: CycleGANModel
 scale: 4
-gpu_ids: [1]
+gpu_ids: [5]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,8 +15,8 @@ datasets:
     color: RGB
     ratios: [1, 4]
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -32,8 +32,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures  
 netG1:
@@ -99,11 +99,11 @@ train:
       
     g1_idt:
       type: L1Loss
-      weight: 5.0
+      weight: 0.0
     
     g2_idt:
       type: L1Loss
-      weight: 5.0
+      weight: 0.0
 
     g1g2_cycle:
       type: L1Loss

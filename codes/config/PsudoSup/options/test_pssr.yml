@@ -1,43 +1,43 @@
 #### general settings
-name: cingan
+name: pseudo_sup
 use_tb_logger: false
-model: CinGANModel
+model: PSSRModel
 scale: 4
-gpu_ids: [4]
+gpu_ids: [7]
 
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque] 
 
 datasets:
-  test1:
-    name: 2017Track2
-    mode: PairedDataset
-    data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  test2:
-    name: 2018Track2
-    mode: PairedDataset
-    data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_mild.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  test3:
-    name: 2018Track3
-    mode: PairedDataset
-    data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_difficult.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  test4:
-    name: 2018Track4
-    mode: PairedDataset
-    data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_wild.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  # test1:
+  #   name: 2017Track2
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  # test2:
+  #   name: 2018Track2
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_mild.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  # test3:
+  #   name: 2018Track3
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_difficult.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  # test4:
+  #   name: 2018Track4
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_wild.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
   test5:
     name: 2020Track1
     mode: PairedDataset
     data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_input.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_gt.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_valid_input.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
 
 #### network structures
 netSR:
@@ -48,15 +48,15 @@ netSR:
     res_scale: 0.1
     upscale: 4
   pretrain: 
-    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
+    path: log/pseudo_sup/models/latest_netSR.pth
     strict_load: true
 
 netG1:
   which_network: Translator
   setting:
     nf: 64
-    nb: 16
+    nb: 8
     scale: 1
   pretrain: 
-    path: ~
+    path: log/pseudo_sup/models/latest_netG1.pth
     strict_load: true
