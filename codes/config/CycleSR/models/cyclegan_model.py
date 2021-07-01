@@ -10,6 +10,24 @@ from .base_model import BaseModel
 
 logger = logging.getLogger("base")
 
+class Quant(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input):
+        output = torch.clamp(input, 0, 1)
+        output = (output * 255.).round() / 255.
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output
+
+class Quantization(nn.Module):
+    def __init__(self):
+        super(Quantization, self).__init__()
+
+    def forward(self, input):
+        return Quant.apply(input)
 
 @MODEL_REGISTRY.register()
 class CycleGANModel(BaseModel):
@@ -43,6 +61,7 @@ class CycleGANModel(BaseModel):
 
         if self.is_train:
             train_opt = opt["train"]
+            self.quant = Quantization()
 
             # build networks
             for name in self.network_names[1:]:
@@ -101,13 +120,13 @@ class CycleGANModel(BaseModel):
         self.set_requires_grad(["netD1", "netD2"], False)
 
         g1_adv_loss = self.calculate_gan_loss_G(
-            self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
+            self.netD1, self.losses["g1d1_adv"], self.tgt, self.quant(self.fake_tgt)
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["g1d1_adv"] * g1_adv_loss
 
         g2_adv_loss = self.calculate_gan_loss_G(
-            self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
+            self.netD2, self.losses["g2d2_adv"], self.src, self.quant(self.fake_src)
         )
         loss_dict["g2_adv"] = g2_adv_loss.item()
         loss_G += self.loss_weights["g2d2_adv"] * g2_adv_loss
@@ -141,13 +160,13 @@ class CycleGANModel(BaseModel):
 
         loss_D = 0
         loss_d1 = self.calculate_gan_loss_D(
-            self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
+            self.netD1, self.losses["g1d1_adv"], self.tgt, self.quant(self.fake_tgt)
         )
         loss_dict["d1_adv"] = loss_d1.item()
         loss_D += loss_d1
 
         loss_d2 = self.calculate_gan_loss_D(
-            self.netD2, self.losses["g2d2_adv"], self.src, self.fake_src
+            self.netD2, self.losses["g2d2_adv"], self.src, self.quant(self.fake_src)
         )
         loss_dict["d2_adv"] = loss_d2.item()
         loss_D += loss_d2

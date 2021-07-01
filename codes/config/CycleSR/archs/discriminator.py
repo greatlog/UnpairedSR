@@ -124,7 +124,7 @@ class DiscriminatorVGG32(nn.Module):
 class PatchGANDiscriminator(nn.Module):
     """Defines a PatchGAN discriminator"""
 
-    def __init__(self, in_c, nf, nb, stride=1, norm_layer=nn.BatchNorm2d):
+    def __init__(self, in_c, nf, nb, stride=1, norm_layer=nn.InstanceNorm2d):
         """Construct a PatchGAN discriminator
 
         Parameters:
@@ -141,8 +141,8 @@ class PatchGANDiscriminator(nn.Module):
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
 
-        kw = 4
-        padw = 1
+        kw = 3
+        padw = 0
         sequence = [
             nn.Conv2d(in_c, nf, kernel_size=kw, stride=stride, padding=padw),
             nn.LeakyReLU(0.2, True),
@@ -157,7 +157,7 @@ class PatchGANDiscriminator(nn.Module):
                     nf * nf_mult_prev,
                     nf * nf_mult,
                     kernel_size=kw,
-                    stride=2,
+                    stride=1,
                     padding=padw,
                     bias=use_bias,
                 ),

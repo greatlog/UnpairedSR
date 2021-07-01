@@ -11,6 +11,26 @@ from .base_model import BaseModel
 logger = logging.getLogger("base")
 
 
+class Quant(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input):
+        output = torch.clamp(input, 0, 1)
+        output = (output * 255.).round() / 255.
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output
+
+class Quantization(nn.Module):
+    def __init__(self):
+        super(Quantization, self).__init__()
+
+    def forward(self, input):
+        return Quant.apply(input)
+
+
 @MODEL_REGISTRY.register()
 class CycleSRModel(BaseModel):
     def __init__(self, opt):
@@ -46,6 +66,7 @@ class CycleSRModel(BaseModel):
 
         if self.is_train:
             train_opt = opt["train"]
+            self.quant = Quantization()
 
             # build networks
             for name in self.network_names[1:]:
@@ -95,7 +116,7 @@ class CycleSRModel(BaseModel):
 
     def forward_trans(self):
         self.fake_real_lr = self.netG1(self.syn_lr)
-        self.fake_syn_hr = self.netSR(self.fake_real_lr)
+        self.fake_syn_hr = self.netSR(self.quant(self.fake_real_lr))
 
         self.rec_syn_lr = self.netG2(self.fake_real_lr)
 
@@ -104,7 +125,7 @@ class CycleSRModel(BaseModel):
     
     def forward_sr(self):
         # self.fake_real_lr = self.netG1(self.syn_lr)
-        self.fake_syn_hr = self.netSR(self.fake_real_lr.detach())
+        self.fake_syn_hr = self.netSR(self.quant(self.fake_real_lr).detach())
     
     def optimize_trans_models(self, step, loss_dict):
         # set D fixed
@@ -236,7 +257,7 @@ class CycleSRModel(BaseModel):
     
     def calculate_gan_loss_D(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(fake.detach())
+        d_pred_fake = netD(self.quant(fake).detach())
         d_pred_real = netD(real)
 
         loss_real = criterion(d_pred_real, True, is_disc=True)
@@ -246,7 +267,7 @@ class CycleSRModel(BaseModel):
 
     def calculate_gan_loss_G(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(fake)
+        d_pred_fake = netD(self.quant(fake))
         loss_real = criterion(d_pred_fake, True, is_disc=False)
 
         return loss_real

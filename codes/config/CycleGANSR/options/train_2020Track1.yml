@@ -1,9 +1,9 @@
 #### general settings
-name: translation
+name: 2020Track1
 use_tb_logger: false
 model: CycleGANModel
-scale: 1
-gpu_ids: [4]
+scale: 4
+gpu_ids: [0]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,38 +13,38 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratio: 8
+    ratios: [1, 4]
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
 
     use_shuffle: true
-    n_workers: 4  # per GPU
+    n_workers: 8  # per GPU
     batch_size: 32
-    tgt_size: 32
+    tgt_size: 128
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: DIV2K
+    name: 2020Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures  
 netG1:
-  which_network: Translator
+  which_network: EDSR
   setting:
     nf: 64
-    nb: 8
-    zero_tail: true
-    scale: 1
+    nb: 16
+    res_scale: 0.1
+    upscale: 4
   pretrain: 
-    path: log/cyclegan_translation/models/80000_netG1.pth
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
     strict_load: true
 
 netD1:
@@ -52,9 +52,9 @@ netD1:
   setting:
     in_c: 3
     nf: 64
-    nb: 3
+    nb: 8
   pretrain:
-    path: log/cyclegan_translation/models/80000_netD1.pth
+    path: ~
     strict_load: true
 
 netG2:
@@ -63,9 +63,9 @@ netG2:
     nf: 64
     nb: 8
     zero_tail: true
-    scale: 1
+    scale: 0.25
   pretrain:
-    path: log/cyclegan_translation/models/80000_netG2.pth
+    path: ~
     strict_load: true
 
 netD2:
@@ -73,9 +73,9 @@ netD2:
   setting:
     in_c: 3
     nf: 64
-    nb: 3
+    nb: 8
   pretrain:
-    path: log/cyclegan_translation/models/80000_netD2.pth
+    path: ~
     strict_load: true
 
 #### training settings: learning rate scheme, loss
@@ -99,11 +99,11 @@ train:
       
     g1_idt:
       type: L1Loss
-      weight: 5.0
+      weight: 0.0
     
     g2_idt:
       type: L1Loss
-      weight: 5.0
+      weight: 0.0
 
     g1g2_cycle:
       type: L1Loss
@@ -116,16 +116,16 @@ train:
   optimizers:
     netG1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netG2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
   
   niter: 100000
   warmup_iter: -1  # no warm up
