@@ -1,9 +1,9 @@
 #### general settings
-name: latentrans
+name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [5]
+gpu_ids: [0]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,10 +13,11 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratio: 1
+    ratios: [1, 1]
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
+    # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
@@ -27,13 +28,13 @@ datasets:
     use_rot: true
 
   val:
-    name: 2017Track2_mini
+    name: 2017Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 Encoder:
@@ -43,27 +44,17 @@ Encoder:
     nb: 8
     scale_factor: 4
   pretrain: 
-    path: ../../../checkpoints/AutoEncoder/encoderx4_8b16b.pth
+    path: ../../../checkpoints/RescaleL2/e8d32x4_E.pth
     strict_load: true
 
 Decoder:
   which_network: Decoder
   setting:
     nf: 64
-    nb: 16
+    nb: 32
     scale_factor: 4
   pretrain: 
-    path: ../../../checkpoints/AutoEncoder/decoderx4_8b16b.pth
-  
-#### network structures  
-netG1:
-  which_network: Translator
-  setting:
-    nf: 64
-    nb: 8
-    scale: 1
-  pretrain: 
-    path: ~
+    path: ../../../checkpoints/RescaleL2/e8d32x4_D.pth
     strict_load: true
 
 netD1:
@@ -71,19 +62,8 @@ netD1:
   setting:
     in_c: 3
     nf: 64
-    nb: 3
+    nb: 5
     stride: 1
-  pretrain: 
-    path: ~
-    strict_load: true
-
-netG2:
-  which_network: Translator
-  setting:
-    nf: 64
-    nb: 8
-    zero_tail: true
-    scale: 0.25
   pretrain: 
     path: ~
     strict_load: true
@@ -92,8 +72,8 @@ netD2:
   which_network: PatchGANDiscriminator
   setting:
     in_c: 3
-    nf: 64
-    nb: 3
+    nf: 16
+    nb: 5
     stride: 1
   pretrain: 
     path: ~
@@ -109,7 +89,7 @@ train:
       gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
-      weight: !!float 1.0
+      weight: !!float 0.0
     
     lr_adv:
       type: GANLoss
@@ -118,15 +98,15 @@ train:
       fake_label_val: 0.0
       weight: !!float 1.0
 
-    cycle: 
+    sr_pix: 
       type: L1Loss
       weight: 1.0
 
   optimizers:
-    netG1:
+    Encoder:
       type: Adam
       lr: !!float 1e-4
-    netG2:
+    Decoder:
       type: Adam
       lr: !!float 1e-4
     netD1:
@@ -136,12 +116,12 @@ train:
       type: Adam
       lr: !!float 1e-4
    
-  niter: 100000
+  niter: 200000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000]
+    milestones: [100000]
     gamma: 0.5
 
   manual_seed: 0

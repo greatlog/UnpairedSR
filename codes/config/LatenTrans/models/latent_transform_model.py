@@ -10,6 +10,25 @@ from .base_model import BaseModel
 
 logger = logging.getLogger("base")
 
+class Quant(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input):
+        output = torch.clamp(input, 0, 1)
+        output = (output * 255.).round() / 255.
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output
+
+class Quantization(nn.Module):
+    def __init__(self):
+        super(Quantization, self).__init__()
+
+    def forward(self, input):
+        return Quant.apply(input)
+
 
 @MODEL_REGISTRY.register()
 class LatenTransModel(BaseModel):
@@ -22,33 +41,31 @@ class LatenTransModel(BaseModel):
 
         self.data_names = ["src", "tgt"]
 
-        self.network_names = ["netG1", "Decoder", "Encoder", "netG2", "netD1", "netD2"]
+        self.network_names = ["Decoder", "Encoder", "netD1", "netD2"]
         self.networks = {}
 
         self.loss_names = [
             "lr_adv",
             "sr_adv",
-            "cycle",
+            "sr_pix",
         ]
         self.loss_weights = {}
         self.losses = {}
         self.optimizers = {}
 
         # define networks and load pretrained models
-        self.netG1 = self.build_network(opt["netG1"])
-        self.networks["netG1"] = self.netG1
-
         self.Decoder = self.build_network(opt["Decoder"])
         self.networks["Decoder"] = self.Decoder
 
         if self.is_train:
             train_opt = opt["train"]
+            self.quant = Quantization()
 
             # build networks
-            for name in self.network_names[2:]:
+            for name in self.network_names[1:]:
                 setattr(self, name, self.build_network(opt[name]))
                 self.networks[name] = getattr(self, name)
-
+            
             # define losses
             loss_opt = train_opt["losses"]
             for name in self.loss_names:
@@ -77,66 +94,68 @@ class LatenTransModel(BaseModel):
             self.setup_schedulers(scheduler_opt)
 
             # set to training state
-            self.set_train_state(["netG1", "netG2", "netD1", "netD2"], "train")
-            self.set_requires_grad(["Encoder", "Decoder"], False)
+            self.set_train_state(self.networks.keys(), "train")
 
     def forward(self, data, step):
 
-        self.src = data["src"].to(self.device)
-        self.tgt = data["tgt"].to(self.device)
+        self.syn_hr = data["tgt"].to(self.device)
+        self.real_lr = data["src"].to(self.device)
 
-        self.latent_code = self.Encoder(self.tgt)
-        self.fake_latent_code = self.netG1(self.src)
+        self.fake_real_lr = self.Encoder(self.syn_hr)
+        # self.fake_real_lr = self.quant(self.fake_real_lr)
+        self.syn_sr = self.Decoder(self.quant(self.fake_real_lr))
 
-        self.fake_tgt = self.Decoder(self.fake_latent_code)
-        if hasattr(self, "netG2"):
-            self.rec_src = self.netG2(self.fake_tgt)
+        if self.losses.get("sr_adv"):
+            self.real_sr = self.Decoder(self.real_lr)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
         loss_G = 0
         # set D fixed
-        self.set_requires_grad(["netD1", "netD2"], False)
+        self.set_requires_grad(["netD1"], False)
 
         g1_adv_loss = self.calculate_gan_loss_G(
             self.netD1, self.losses["lr_adv"],
-            self.latent_code.detach(), self.fake_latent_code
+            self.real_lr, self.fake_real_lr
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["lr_adv"] * g1_adv_loss
 
-        sr_adv_loss = self.calculate_rgan_loss_G(
-            self.netD2, self.losses["sr_adv"], self.tgt, self.fake_tgt
-        )
-        loss_dict["sr_adv"] = sr_adv_loss.item()
-        loss_G += self.loss_weights["sr_adv"] * sr_adv_loss
+        if self.losses.get("sr_adv"):
+            self.set_requires_grad(["netD2"], False)
+            sr_adv_loss = self.calculate_gan_loss_G(
+                self.netD2, self.losses["sr_adv"], self.syn_hr, self.quant(self.real_sr)
+            )
+            loss_dict["sr_adv"] = sr_adv_loss.item()
+            loss_G += self.loss_weights["sr_adv"] * sr_adv_loss
+        
+        sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr)
+        loss_dict["sr_pix"] = sr_pix.item()
+        loss_G += self.loss_weights["sr_pix"] * sr_pix
 
-        if self.losses.get("cycle"):
-            cycle_loss = self.losses["cycle"](self.rec_src, self.src)
-            loss_dict["cycle"] = cycle_loss.item()
-            loss_G += self.loss_weights["cycle"] * cycle_loss
-
-        self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
+        self.optimizer_operator(names=["Encoder", "Decoder"], operation="zero_grad")
         loss_G.backward()
-        self.optimizer_operator(names=["netG1", "netG2"], operation="step")
+        self.optimizer_operator(names=["Encoder", "Decoder"], operation="step")
 
         ## update D1, D2
-        self.set_requires_grad(["netD1", "netD2"], True)
+        self.set_requires_grad(["netD1"], True)
 
         loss_D = 0
-        loss_d1 = self.calculate_rgan_loss_D(
+        loss_d1 = self.calculate_gan_loss_D(
             self.netD1, self.losses["lr_adv"],
-            self.latent_code.detach(), self.fake_latent_code
+            self.real_lr, self.fake_real_lr
         )
         loss_dict["d1_adv"] = loss_d1.item()
-        loss_D += loss_d1
+        loss_D += self.loss_weights["lr_adv"] * loss_d1
 
-        loss_d2 = self.calculate_rgan_loss_D(
-            self.netD2, self.losses["sr_adv"], self.tgt, self.fake_tgt
-        )
-        loss_dict["d2_adv"] = loss_d2.item()
-        loss_D += loss_d2
+        if self.losses.get("sr_adv"):
+            self.set_requires_grad(["netD2"], True)
+            loss_d2 = self.calculate_gan_loss_D(
+                self.netD2, self.losses["sr_adv"], self.syn_hr, self.quant(self.real_sr).detach()
+            )
+            loss_dict["d2_adv"] = loss_d2.item()
+            loss_D += self.loss_weights["sr_adv"] * loss_d2
 
         self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
         loss_D.backward()
@@ -189,11 +208,10 @@ class LatenTransModel(BaseModel):
 
     def test(self, src):
         self.src = src.to(self.device)
-        self.set_train_state(["netG1", "Decoder"], "eval")
+        self.set_train_state(["Decoder"], "eval")
         with torch.no_grad():
-            self.fake_latent_code = self.netG1(self.src)
-            self.fake_tgt = self.Decoder(self.fake_latent_code)
-        self.set_train_state(["netG1", "Decoder"], "train")
+            self.fake_tgt = self.Decoder(self.src)
+        self.set_train_state(["Decoder"], "train")
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
