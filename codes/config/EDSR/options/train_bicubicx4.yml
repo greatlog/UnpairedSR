@@ -3,7 +3,7 @@ name: sr_bicubicx4
 use_tb_logger: false
 model: SRModel
 scale: 4
-gpu_ids: [4]
+gpu_ids: [0]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -14,8 +14,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -31,8 +31,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/Set5/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/Set5/HR/x4.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/Set5/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/Set5/HR/x4.lmdb
 
 #### network structures
 netSR:
