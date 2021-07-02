@@ -242,7 +242,7 @@ class BaseModel:
         ), "Wrong lengths of schedulers"
         for name, o in resume_optimizers.items():
             self.optimizers[name].load_state_dict(o)
-        for name, o in resume_schedulers.items():
+        for name, s in resume_schedulers.items():
             self.schedulers[name].load_state_dict(s)
 
     def reduce_loss_dict(self, loss_dict):
