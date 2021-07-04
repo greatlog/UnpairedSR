@@ -96,24 +96,27 @@ class LatenTransModel(BaseModel):
             # set to training state
             self.set_train_state(self.networks.keys(), "train")
 
-    def forward(self, data, step):
+    def feed_data(self, data):
 
         self.syn_hr = data["tgt"].to(self.device)
         self.real_lr = data["src"].to(self.device)
 
+    def encoder_forward(self):
         self.fake_real_lr = self.Encoder(self.syn_hr)
-        # self.fake_real_lr = self.quant(self.fake_real_lr)
-        self.syn_sr = self.Decoder(self.quant(self.fake_real_lr))
-
+        self.syn_sr = self.Decoder(self.fake_real_lr)
+    
+    def decoder_forward(self):
+        self.syn_sr_quant = self.Decoder(self.quant(self.fake_real_lr).detach())
         if self.losses.get("sr_adv"):
             self.real_sr = self.Decoder(self.real_lr)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
-        loss_G = 0
         # set D fixed
-        self.set_requires_grad(["netD1"], False)
+        self.set_requires_grad(["netD1", "Decoder"], False)
+        self.encoder_forward()
+        loss_G = 0
 
         g1_adv_loss = self.calculate_gan_loss_G(
             self.netD1, self.losses["lr_adv"],
@@ -122,21 +125,33 @@ class LatenTransModel(BaseModel):
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["lr_adv"] * g1_adv_loss
 
-        if self.losses.get("sr_adv"):
-            self.set_requires_grad(["netD2"], False)
-            sr_adv_loss = self.calculate_gan_loss_G(
-                self.netD2, self.losses["sr_adv"], self.syn_hr, self.quant(self.real_sr)
-            )
-            loss_dict["sr_adv"] = sr_adv_loss.item()
-            loss_G += self.loss_weights["sr_adv"] * sr_adv_loss
-        
         sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr)
         loss_dict["sr_pix"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix"] * sr_pix
 
-        self.optimizer_operator(names=["Encoder", "Decoder"], operation="zero_grad")
+        self.optimizer_operator(names=["Encoder"], operation="zero_grad")
         loss_G.backward()
-        self.optimizer_operator(names=["Encoder", "Decoder"], operation="step")
+        self.optimizer_operator(names=["Encoder"], operation="step")
+
+        self.set_requires_grad(["Decoder"], True)
+        self.decoder_forward()
+        loss_G = 0
+
+        if self.losses.get("sr_adv"):
+            self.set_requires_grad(["netD2"], False)
+            sr_adv_loss = self.calculate_gan_loss_G(
+                self.netD2, self.losses["sr_adv"], self.syn_hr, self.real_sr
+            )
+            loss_dict["sr_adv"] = sr_adv_loss.item()
+            loss_G += self.loss_weights["sr_adv"] * sr_adv_loss
+
+        sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr_quant)
+        loss_dict["sr_pix"] = sr_pix.item()
+        loss_G += self.loss_weights["sr_pix"] * sr_pix
+
+        self.optimizer_operator(names=["Decoder"], operation="zero_grad")
+        loss_G.backward()
+        self.optimizer_operator(names=["Decoder"], operation="step")
 
         ## update D1, D2
         self.set_requires_grad(["netD1"], True)

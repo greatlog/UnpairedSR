@@ -99,22 +99,22 @@ train:
       weight: !!float 1.0
 
     sr_pix: 
-      type: L1Loss
-      weight: 1.0
+      type: MSELoss
+      weight: 1000.0
 
   optimizers:
     Encoder:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     Decoder:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
    
   niter: 200000
   warmup_iter: -1  # no warm up

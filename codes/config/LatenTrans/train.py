@@ -232,7 +232,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             if current_step > total_iters:
                 break
 
-            model.forward(train_data, current_step)
+            model.feed_data(train_data)
             model.optimize_parameters(current_step)
             model.update_learning_rate(
                 current_step, warmup_iter=opt["train"]["warmup_iter"]

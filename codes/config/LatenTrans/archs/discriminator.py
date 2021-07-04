@@ -142,7 +142,7 @@ class PatchGANDiscriminator(nn.Module):
             use_bias = norm_layer == nn.InstanceNorm2d
 
         kw = 3
-        padw = 0
+        padw = 1
         sequence = [
             nn.Conv2d(in_c, nf, kernel_size=kw, stride=stride, padding=padw),
             nn.LeakyReLU(0.2, True),
