@@ -141,7 +141,7 @@ class PatchGANDiscriminator(nn.Module):
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
 
-        kw = 4
+        kw = 3
         padw = 1
         sequence = [
             nn.Conv2d(in_c, nf, kernel_size=kw, stride=stride, padding=padw),
@@ -157,7 +157,7 @@ class PatchGANDiscriminator(nn.Module):
                     nf * nf_mult_prev,
                     nf * nf_mult,
                     kernel_size=kw,
-                    stride=stride,
+                    stride=1,
                     padding=padw,
                     bias=use_bias,
                 ),

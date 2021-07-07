@@ -103,7 +103,8 @@ class LatenTransModel(BaseModel):
         self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
-        self.fake_real_lr = self.Encoder(self.syn_hr)
+        noise = torch.randn_like(self.real_lr).to(self.device)
+        self.fake_real_lr = self.Encoder(self.syn_hr, noise)
         self.syn_sr = self.Decoder(self.fake_real_lr)
     
     def decoder_forward(self):
@@ -128,7 +129,7 @@ class LatenTransModel(BaseModel):
 
         sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr)
         loss_dict["sr_pix"] = sr_pix.item()
-        loss_G += self.loss_weights["sr_pix"] * sr_pix
+        loss_G += self.loss_weights["sr_pix"] * sr_pix * 1000
 
         self.optimizer_operator(names=["Encoder"], operation="zero_grad")
         loss_G.backward()

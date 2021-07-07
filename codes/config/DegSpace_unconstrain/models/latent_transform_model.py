@@ -46,6 +46,7 @@ class LatenTransModel(BaseModel):
 
         self.loss_names = [
             "lr_adv",
+            "lr_idt",
             "sr_adv",
             "sr_pix",
         ]
@@ -99,7 +100,8 @@ class LatenTransModel(BaseModel):
 
     def feed_data(self, data):
 
-        self.syn_hr = data["tgt"].to(self.device)
+        self.syn_hr = data["ref_tgt"].to(self.device)
+        self.syn_lr = data["ref_src"].to(self.device)
         self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
@@ -123,12 +125,17 @@ class LatenTransModel(BaseModel):
             self.netD1, self.losses["lr_adv"],
             self.real_lr, self.fake_real_lr
         )
-        loss_dict["g1_adv"] = g1_adv_loss.item()
+        loss_dict["lr_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["lr_adv"] * g1_adv_loss
+
+        if self.losses.get("lr_idt"):
+            lr_idt = self.losses["lr_idt"](self.syn_lr, self.fake_real_lr)
+            loss_dict["lr_idt"] = lr_idt.item()
+            loss_G += self.loss_weights["lr_idt"] * lr_idt
 
         sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr)
         loss_dict["sr_pix"] = sr_pix.item()
-        loss_G += self.loss_weights["sr_pix"] * sr_pix
+        loss_G += self.loss_weights["sr_pix"] * sr_pix * 1000
 
         self.optimizer_operator(names=["Encoder"], operation="zero_grad")
         loss_G.backward()

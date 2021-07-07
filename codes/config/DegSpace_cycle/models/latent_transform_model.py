@@ -46,6 +46,7 @@ class LatenTransModel(BaseModel):
 
         self.loss_names = [
             "lr_adv",
+            "lr_cycle",
             "sr_adv",
             "sr_pix",
         ]
@@ -103,13 +104,14 @@ class LatenTransModel(BaseModel):
         self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
-        self.fake_real_lr = self.Encoder(self.syn_hr)
+        self.noise = torch.randn_like(self.real_lr).to(self.device)
+        self.fake_real_lr = self.Encoder(self.syn_hr, self.noise)
         self.syn_sr = self.Decoder(self.fake_real_lr)
     
     def decoder_forward(self):
         self.syn_sr_quant = self.Decoder(self.quant(self.fake_real_lr).detach())
-        if self.losses.get("sr_adv"):
-            self.real_sr = self.Decoder(self.real_lr)
+        self.real_sr = self.Decoder(self.real_lr)
+        self.fake_syn_lr = self.Encoder(self.real_sr, self.noise)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
@@ -128,7 +130,7 @@ class LatenTransModel(BaseModel):
 
         sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr)
         loss_dict["sr_pix"] = sr_pix.item()
-        loss_G += self.loss_weights["sr_pix"] * sr_pix
+        loss_G += self.loss_weights["sr_pix"] * sr_pix * 1000
 
         self.optimizer_operator(names=["Encoder"], operation="zero_grad")
         loss_G.backward()
@@ -149,6 +151,10 @@ class LatenTransModel(BaseModel):
         sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr_quant)
         loss_dict["sr_pix"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix"] * sr_pix
+
+        lr_cycle = self.losses["lr_cycle"](self.real_lr, self.fake_syn_lr)
+        loss_dict["lr_cycle"] = lr_cycle.item()
+        loss_G += self.loss_weights["lr_cycle"] * lr_cycle
 
         self.optimizer_operator(names=["Decoder"], operation="zero_grad")
         loss_G.backward()

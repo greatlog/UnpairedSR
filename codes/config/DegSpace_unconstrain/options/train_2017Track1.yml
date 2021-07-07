@@ -1,9 +1,9 @@
 #### general settings
-name: CycleSR2017Track1_edsr
+name: 2017Track1
 use_tb_logger: false
-model: CycleSRModel
+model: LatenTransModel
 scale: 4
-gpu_ids: [4]
+gpu_ids: [0]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -20,7 +20,7 @@ datasets:
     dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
-    n_workers: 8  # per GPU
+    n_workers: 4  # per GPU
     batch_size: 32
     tgt_size: 128
     src_size: 32
@@ -37,51 +37,26 @@ datasets:
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
-# netSR:
-#   which_network: RRDBNet
-#   setting:
-#     in_nc: 3
-#     out_nc: 3
-#     nf: 64
-#     nb: 23
-#     upscale: 4
-#   pretrain:
-#     path: ../../../checkpoints/ESRGAN/RRDB_PSNR_x4.pth
-#     strict_load: true
+Encoder:
+  which_network: Translator
+  setting:
+    nf: 64
+    nb: 8
+    zero_tail: true
+    scale: 0.25
+  pretrain: 
+    path: ~
+    strict_load: true
 
-netSR:
+Decoder:
   which_network: EDSR
   setting:
     nf: 64
     nb: 16
     res_scale: 1
     upscale: 4
-  pretrain:
-    # path: log/CycleSR2017Track1_edsr/models/15000_netSR.pth
-    path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
-    strict_load: true
-
-netD3:
-  which_network: PatchGANDiscriminator
-  setting:
-    in_c: 3
-    nf: 64
-    nb: 3
-    stride: 2
-  pretrain:
-    path: ~
-    strict_load: true
-  
-#### network structures  
-netG1:
-  which_network: Translator
-  setting:
-    nf: 64
-    nb: 8
-    zero_tail: true
-    scale: 1
-  pretrain:
-    path: ~
+  pretrain: 
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
     strict_load: true
 
 netD1:
@@ -91,18 +66,7 @@ netD1:
     nf: 64
     nb: 3
     stride: 2
-  pretrain:
-    path: ~
-    strict_load: true
-
-netG2:
-  which_network: Translator
-  setting:
-    nf: 64
-    nb: 8
-    zero_tail: true
-    scale: 1
-  pretrain:
+  pretrain: 
     path: ~
     strict_load: true
 
@@ -110,17 +74,17 @@ netD2:
   which_network: PatchGANDiscriminator
   setting:
     in_c: 3
-    nf: 64
-    nb: 3
-    stride: 2
-  pretrain:
+    nf: 16
+    nb: 5
+    stride: 1
+  pretrain: 
     path: ~
     strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
-
+  D_ratio: 1
   losses:
     sr_adv:
       type: GANLoss
@@ -128,62 +92,27 @@ train:
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 0.0
+    
+    lr_adv:
+      type: GANLoss
+      gan_type: lsgan
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 1.0
+    
+    lr_idt:
+      type: MSELoss
+      weight: 1.0
 
     sr_pix: 
       type: MSELoss
-      weight: 1000.0
+      weight: 1.0
 
-    sr_percep:
-      type: PerceptualLoss
-      layer_weights:
-        'conv5_4': 1  # before relu
-      vgg_type: vgg19
-      use_input_norm: true
-      range_norm: false
-      perceptual_weight: 1.0
-      style_weight: 0
-      criterion: l1
-      weight: !!float 0.0
-
-    g1_d1_adv:
-      type: GANLoss
-      gan_type: lsgan
-      real_label_val: 1.0
-      fake_label_val: 0.0
-      weight: !!float 1.0
-
-    g2_d2_adv:
-      type: GANLoss
-      gan_type: lsgan
-      real_label_val: 1.0
-      fake_label_val: 0.0
-      weight: !!float 1.0
-    
-    g1_idt:
-      type: L1Loss
-      weight: 5
-    
-    g2_idt:
-      type: L1Loss
-      weight: 5
-
-    g1g2_cycle:
-      type: L1Loss
-      weight: 10.0
-
-    g2g1_cycle: 
-      type: L1Loss
-      weight: 10.0
-
-  max_grad_norm: 50.0
   optimizers:
-    netSR:
-      type: Adam
-      lr: !!float 1e-4
-    netG1:
+    Encoder:
       type: Adam
       lr: !!float 2e-4
-    netG2:
+    Decoder:
       type: Adam
       lr: !!float 2e-4
     netD1:
@@ -192,10 +121,7 @@ train:
     netD2:
       type: Adam
       lr: !!float 2e-4
-    netD3:
-      type: Adam
-      lr: !!float 1e-4
-  
+   
   niter: 100000
   warmup_iter: -1  # no warm up
 
@@ -211,3 +137,4 @@ train:
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
+  

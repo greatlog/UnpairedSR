@@ -103,7 +103,7 @@ class LatenTransModel(BaseModel):
         self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
-        self.fake_real_lr = self.Encoder(self.syn_hr)
+        self.fake_real_lr = self.Encoder(self.syn_hr, self.real_lr)
         self.syn_sr = self.Decoder(self.fake_real_lr)
     
     def decoder_forward(self):
@@ -182,7 +182,7 @@ class LatenTransModel(BaseModel):
     
     def calculate_gan_loss_D(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(self.quant(fake).detach())
+        d_pred_fake = netD(fake.detach())
         d_pred_real = netD(real)
 
         loss_real = criterion(d_pred_real, True, is_disc=True)
@@ -192,7 +192,7 @@ class LatenTransModel(BaseModel):
 
     def calculate_gan_loss_G(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(self.quant(fake))
+        d_pred_fake = netD(fake)
         loss_real = criterion(d_pred_fake, True, is_disc=False)
 
         return loss_real

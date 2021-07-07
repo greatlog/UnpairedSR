@@ -3,7 +3,7 @@ name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [5]
+gpu_ids: [4]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -38,23 +38,25 @@ datasets:
 
 #### network structures
 Encoder:
-  which_network: Encoder
+  which_network: DegModel
   setting:
     nf: 64
     nb: 8
-    scale_factor: 4
+    ksize: 21
+    scale: 4
   pretrain: 
-    path: ../../../checkpoints/RescaleL2/e8d32x4_E.pth
+    path: ~
     strict_load: true
 
 Decoder:
-  which_network: Decoder
+  which_network: EDSR
   setting:
     nf: 64
-    nb: 32
-    scale_factor: 4
+    nb: 16
+    res_scale: 1
+    upscale: 4
   pretrain: 
-    path: ../../../checkpoints/RescaleL2/e8d32x4_D.pth
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
     strict_load: true
 
 netD1:
@@ -83,7 +85,6 @@ netD2:
 train:
   resume_state: ~
   D_ratio: 5
-
   losses:
     sr_adv:
       type: GANLoss
@@ -126,9 +127,9 @@ train:
     gamma: 0.5
 
   manual_seed: 0
-  val_freq: !!float 5e3
+  val_freq: !!float 5e2
 
 #### logger
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 5e3
+  save_checkpoint_freq: !!float 5e2

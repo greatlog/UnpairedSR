@@ -3,7 +3,7 @@ name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [5]
+gpu_ids: [4]
 metrics: [psnr, ssim]
 
 #### datasets

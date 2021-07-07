@@ -1,9 +1,9 @@
 #### general settings
-name: 2017Track1
+name: 2020Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [5]
+gpu_ids: [7]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,11 +13,11 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 1]
+    ratios: [8, 1]
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
     # dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_valid_input.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
@@ -28,33 +28,35 @@ datasets:
     use_rot: true
 
   val:
-    name: 2017Track1_mini
+    name: 2020Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 Encoder:
-  which_network: Encoder
+  which_network: DegModel
   setting:
     nf: 64
     nb: 8
-    scale_factor: 4
+    ksize: 21
+    scale: 4
   pretrain: 
-    path: ../../../checkpoints/RescaleL2/e8d32x4_E.pth
+    path: ~
     strict_load: true
 
 Decoder:
-  which_network: Decoder
+  which_network: EDSR
   setting:
     nf: 64
-    nb: 32
-    scale_factor: 4
+    nb: 16
+    res_scale: 1
+    upscale: 4
   pretrain: 
-    path: ../../../checkpoints/RescaleL2/e8d32x4_D.pth
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
     strict_load: true
 
 netD1:
@@ -83,7 +85,6 @@ netD2:
 train:
   resume_state: ~
   D_ratio: 5
-
   losses:
     sr_adv:
       type: GANLoss
@@ -100,8 +101,8 @@ train:
       weight: !!float 1.0
 
     sr_pix: 
-      type: MSELoss
-      weight: 1000.0
+      type: L1Loss
+      weight: 10.0
 
   optimizers:
     Encoder:
@@ -126,9 +127,9 @@ train:
     gamma: 0.5
 
   manual_seed: 0
-  val_freq: !!float 5e3
+  val_freq: !!float 5e2
 
 #### logger
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 5e3
+  save_checkpoint_freq: !!float 5e2

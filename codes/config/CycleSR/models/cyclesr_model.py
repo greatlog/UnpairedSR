@@ -116,7 +116,7 @@ class CycleSRModel(BaseModel):
 
     def forward_trans(self):
         self.fake_real_lr = self.netG1(self.syn_lr)
-        self.fake_syn_hr = self.netSR(self.quant(self.fake_real_lr))
+        self.fake_syn_hr = self.netSR(self.fake_real_lr)
 
         self.rec_syn_lr = self.netG2(self.fake_real_lr)
 
