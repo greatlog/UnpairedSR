@@ -21,20 +21,18 @@ class DegModel(nn.Module):
                     conv=default_conv, n_feat=nf, kernel_size=3
                     ) for _ in range(nb)
                 ],
-            nn.Conv2d(nf, ksize**2, 1, 1, 0),
-            nn.Softmax(1)
+            nn.Conv2d(nf, ksize**2 + 1, 1, 1, 0),
         ]
         self.deg_module = nn.Sequential(*deg_module)
-
-        self.noise_std = nn.Parameter(torch.FloatTensor([0.0]), requires_grad=True)
+        self.deg_module[-1].weight.data[-1] = 0
 
         self.pad = nn.ReflectionPad2d(self.ksize//2)
         
     def forward(self, x, z):
         B, C, H, W = x.shape
 
-        kernel = self.deg_module(z)
-        kernel = kernel.view(B, 1, self.ksize**2, *z.shape[2:])
+        kernel, noise_std = self.deg_module(z).split([self.ksize**2, 1], dim=1)
+        kernel = kernel.view(B, 1, self.ksize**2, *z.shape[2:]).softmax(2)
 
         x = x.view(B*C, 1, H, W)
         x = F.unfold(
@@ -42,7 +40,7 @@ class DegModel(nn.Module):
         ).view(B, C, self.ksize**2, *z.shape[2:])
         x = torch.mul(x, kernel).sum(2).view(B, C, *z.shape[2:])
 
-        noise = self.noise_std * torch.randn_like(z)
+        noise = noise_std * torch.randn_like(z)
         x = x + noise
         
         return x

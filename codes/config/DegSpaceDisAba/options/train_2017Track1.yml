@@ -1,9 +1,9 @@
 #### general settings
-name: 2017Track1_test2
+name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [7]
+gpu_ids: [5]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -70,21 +70,22 @@ netD1:
     path: ~
     strict_load: true
 
-netD2:
-  which_network: PatchGANDiscriminator
-  setting:
-    in_c: 3
-    nf: 16
-    nb: 5
-    stride: 1
-  pretrain: 
-    path: ~
-    strict_load: true
+# netD2:
+#   which_network: PatchGANDiscriminator
+#   setting:
+#     in_c: 3
+#     nf: 16
+#     nb: 5
+#     stride: 1
+#   pretrain: 
+#     path: ~
+#     strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
   D_ratio: 1
+  max_grad_norm: 50
   losses:
     sr_adv:
       type: GANLoss
@@ -99,6 +100,10 @@ train:
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 1.0
+    
+    lr_quant:
+      type: L1Loss
+      weight: 1.0
 
     sr_pix: 
       type: L1Loss
@@ -114,16 +119,16 @@ train:
     netD1:
       type: Adam
       lr: !!float 2e-4
-    netD2:
-      type: Adam
-      lr: !!float 2e-4
+    # netD2:
+    #   type: Adam
+    #   lr: !!float 2e-4
    
-  niter: 100000
+  niter: 200000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000]
+    milestones: [50000, 100000, 150000]
     gamma: 0.5
 
   manual_seed: 0

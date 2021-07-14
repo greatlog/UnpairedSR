@@ -227,6 +227,9 @@ def main_worker(gpu, ngpus_per_node, opt, args):
         if opt["dist"]:
             train_sampler.set_epoch(epoch)
         for _, train_data in enumerate(train_loader):
+            current_step += 1
+            if current_step > total_iters + 1:
+                break
 
             model.feed_data(train_data)
             model.optimize_parameters(current_step)
@@ -251,7 +254,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             if rank == 0 and current_step % opt["train"]["val_freq"] == 0:
                 test_results = defaultdict(list)
                 for _, val_data in enumerate(val_loader):
-
+                    
                     LR_img = val_data["src"]
                     lr_img = util.tensor2img(LR_img)  # save LR image for reference
 
@@ -313,10 +316,6 @@ def main_worker(gpu, ngpus_per_node, opt, args):
                     logger.info("Saving models and training states.")
                     model.save(current_step)
                     model.save_training_state(epoch, current_step)
-                    
-            current_step += 1
-            if current_step > total_iters:
-                break
 
     if rank == 0:
         logger.info("Saving the final model.")

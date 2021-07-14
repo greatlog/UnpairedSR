@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+import random
 
 import torch
 import torch.nn as nn
@@ -61,6 +62,7 @@ class LatenTransModel(BaseModel):
             train_opt = opt["train"]
             self.quant = Quantization()
             self.D_ratio = train_opt["D_ratio"]
+            self.max_grad_norm = train_opt["max_grad_norm"]
 
             # build networks
             for name in self.network_names[1:]:
@@ -98,9 +100,14 @@ class LatenTransModel(BaseModel):
             self.set_train_state(self.networks.keys(), "train")
 
     def feed_data(self, data):
+        real_lr = data["src"].to(self.device)
+        lr_batch1, lr_batch2 = real_lr.chunk(2, dim=0)
+        ratio = random.random() * 0.2
+        batch1 = lr_batch1 * ratio + lr_batch2 * (1 - ratio)
+        batch2 = lr_batch1 * (1 - ratio) + lr_batch2 * ratio
+        self.real_lr = torch.cat([batch1, batch2], dim=0)
 
         self.syn_hr = data["tgt"].to(self.device)
-        self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
         noise = torch.randn_like(self.real_lr).to(self.device)
@@ -133,6 +140,7 @@ class LatenTransModel(BaseModel):
 
         self.optimizer_operator(names=["Encoder"], operation="zero_grad")
         loss_G.backward()
+        self.clip_grad_norm(["Encoder"], self.max_grad_norm)
         self.optimizer_operator(names=["Encoder"], operation="step")
 
         self.set_requires_grad(["Decoder"], True)
@@ -153,6 +161,7 @@ class LatenTransModel(BaseModel):
 
         self.optimizer_operator(names=["Decoder"], operation="zero_grad")
         loss_G.backward()
+        self.clip_grad_norm(["Decoder"], self.max_grad_norm)
         self.optimizer_operator(names=["Decoder"], operation="step")
 
         ## update D1, D2
@@ -177,13 +186,14 @@ class LatenTransModel(BaseModel):
 
             self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
             loss_D.backward()
+            self.clip_grad_norm(["netD1", "netD2"], self.max_grad_norm)
             self.optimizer_operator(names=["netD1", "netD2"], operation="step")
 
         self.log_dict = loss_dict
     
     def calculate_gan_loss_D(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(self.quant(fake).detach())
+        d_pred_fake = netD(fake.detach())
         d_pred_real = netD(real)
 
         loss_real = criterion(d_pred_real, True, is_disc=True)
@@ -193,7 +203,7 @@ class LatenTransModel(BaseModel):
 
     def calculate_gan_loss_G(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(self.quant(fake))
+        d_pred_fake = netD(fake)
         loss_real = criterion(d_pred_fake, True, is_disc=False)
 
         return loss_real

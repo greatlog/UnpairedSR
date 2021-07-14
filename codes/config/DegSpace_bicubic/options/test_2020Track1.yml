@@ -1,19 +1,19 @@
 #### general settings
-name: 2017Track1
+name: 2020Track1
 use_tb_logger: false
-model: CycleSRModel
+model: LatenTransModel
 scale: 4
 gpu_ids: [7]
 
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque] 
 
 datasets:
-  test1:
-    name: 2017Track1
-    mode: PairedDataset
-    data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  # test1:
+  #   name: 2017Track2
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
   # test2:
   #   name: 2018Track2
   #   mode: PairedDataset
@@ -32,21 +32,21 @@ datasets:
   #   data_type: lmdb
   #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_wild.lmdb
   #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  # test5:
-  #   name: 2020Track1
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_input.lmdb
-  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_gt.lmdb
+  test5:
+    name: 2020Track1
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_valid_input.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_valid_gt.lmdb
 
 #### network structures
-netSR:
+Decoder:
   which_network: EDSR
   setting:
     nf: 64
     nb: 16
     res_scale: 1
     upscale: 4
-  pretrain:
-    path: log/CycleSR2017Track1_edsr/models/90000_netSR.pth
+  pretrain: 
+    path: log/2020Track1/models/95500_Decoder.pth
     strict_load: true
