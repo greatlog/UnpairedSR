@@ -46,9 +46,9 @@ class LatenTransModel(BaseModel):
 
         self.loss_names = [
             "lr_adv",
-            "lr_idt",
             "sr_adv",
             "sr_pix",
+            "lr_quant",
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -65,7 +65,7 @@ class LatenTransModel(BaseModel):
             self.max_grad_norm = train_opt["max_grad_norm"]
 
             # build networks
-            for name in self.network_names[1:]:
+            for name in self.network_names[1:-1]:
                 setattr(self, name, self.build_network(opt[name]))
                 self.networks[name] = getattr(self, name)
             
@@ -77,6 +77,10 @@ class LatenTransModel(BaseModel):
                     if loss_conf["weight"] > 0:
                         self.loss_weights[name] = loss_conf.pop("weight")
                         self.losses[name] = self.build_loss(loss_conf)
+            
+            if self.losses.get("sr_adv"):
+                self.netD2 = self.build_network(opt["netD1"])
+                self.networks["netD2"] = self.netD2
 
             # build optmizers
             self.set_train_state(self.networks, "train")
@@ -101,8 +105,7 @@ class LatenTransModel(BaseModel):
 
     def feed_data(self, data):
 
-        self.syn_hr = data["ref_tgt"].to(self.device)
-        self.syn_lr = data["ref_src"].to(self.device)
+        self.syn_hr = data["tgt"].to(self.device)
         self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
@@ -127,20 +130,23 @@ class LatenTransModel(BaseModel):
             self.netD1, self.losses["lr_adv"],
             self.real_lr, self.fake_real_lr
         )
-        loss_dict["lr_adv"] = g1_adv_loss.item()
+        loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["lr_adv"] * g1_adv_loss
-
-        if self.losses.get("lr_idt"):
-            lr_idt = self.losses["lr_idt"](self.syn_lr, self.fake_real_lr)
-            loss_dict["lr_idt"] = lr_idt.item()
-            loss_G += self.loss_weights["lr_idt"] * lr_idt
 
         sr_pix = self.losses["sr_pix"](self.syn_hr, self.syn_sr)
         loss_dict["sr_pix"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix"] * sr_pix * 10
 
+        if self.losses.get("lr_quant"):
+            lr_quant = self.losses["lr_quant"](
+                self.fake_real_lr, self.quant(self.fake_real_lr)
+                )
+            loss_dict["lr_qunat"] = lr_quant.item()
+            loss_G += self.loss_weights["lr_quant"] * lr_quant
+
         self.optimizer_operator(names=["Encoder"], operation="zero_grad")
         loss_G.backward()
+        self.clip_grad_norm(["Encoder"], self.max_grad_norm)
         self.optimizer_operator(names=["Encoder"], operation="step")
 
         self.set_requires_grad(["Decoder"], True)
@@ -161,6 +167,7 @@ class LatenTransModel(BaseModel):
 
         self.optimizer_operator(names=["Decoder"], operation="zero_grad")
         loss_G.backward()
+        self.clip_grad_norm(["Decoder"], self.max_grad_norm)
         self.optimizer_operator(names=["Decoder"], operation="step")
 
         ## update D1, D2
