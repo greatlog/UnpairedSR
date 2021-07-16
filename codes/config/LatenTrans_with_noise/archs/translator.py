@@ -100,41 +100,20 @@ class Upsampler(nn.Sequential):
 
         super(Upsampler, self).__init__(*m)
 
-class Quant(torch.autograd.Function):
-
-    @staticmethod
-    def forward(ctx, input):
-        output = torch.clamp(input, 0, 1)
-        output = (output * 255.).round() / 255.
-        return output
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
-
-class Quantization(nn.Module):
-    def __init__(self):
-        super(Quantization, self).__init__()
-
-    def forward(self, input):
-        return Quant.apply(input)
 
 @ARCH_REGISTRY.register()
 class Translator(nn.Module):
-    def __init__(self, nb, nf, scale=4, zero_tail=False, quant=False, conv=default_conv):
+    def __init__(self, in_nc, out_nc, nf, nb, scale=4, conv=default_conv):
         super().__init__()
 
         self.scale = scale
-        self.quant = quant
-        if quant:
-            self.quant = Quantization()
 
         # define head module
         if scale >= 1:
-            m_head = [conv(3, nf, 3)]
+            m_head = [conv(in_nc, nf, 3)]
         else:
             s = int(1 / scale)
-            m_head = [nn.Conv2d(3, nf, kernel_size=2 * s + 1, stride=s, padding=s)]
+            m_head = [nn.Conv2d(in_nc, nf, kernel_size=2 * s + 1, stride=s, padding=s)]
 
         # define body module
         m_body = [
@@ -145,28 +124,18 @@ class Translator(nn.Module):
         # define tail module
         m_tail = [
             Upsampler(conv, scale, nf, act=False) if scale > 1 else nn.Identity(),
-            conv(nf, 3, 3),
+            conv(nf, out_nc, 3),
         ]
 
         self.head = nn.Sequential(*m_head)
         self.body = nn.Sequential(*m_body)
         self.tail = nn.Sequential(*m_tail)
 
-        if zero_tail:
-            nn.init.constant_(self.tail[-1].weight, 0)
-            nn.init.constant_(self.tail[-1].bias, 0)
-
     def forward(self, x):
 
-        f = self.head(x)
-        f = self.body(f)
-        f = self.tail(f)
+        x = self.head(x)
+        f = self.body(x)
+        x = f + x
+        x = self.tail(x)
 
-        if self.scale == 1:
-            x = f + x
-        else:
-            x = f + F.interpolate(x, scale_factor=self.scale)
-        
-        if self.quant:
-            x = self.quant(x)
         return x

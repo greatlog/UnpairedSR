@@ -3,7 +3,7 @@ name: CycleSR2017Track1_edsr
 use_tb_logger: false
 model: CycleSRModel
 scale: 4
-gpu_ids: [3]
+gpu_ids: [4]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,9 +15,9 @@ datasets:
     color: RGB
     ratios: [1, 1]
 
-    dataroot_ref_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
-    dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
+    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -33,8 +33,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 # netSR:
@@ -57,7 +57,8 @@ netSR:
     res_scale: 1
     upscale: 4
   pretrain:
-    path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
+    path: log/CycleSR2017Track1_edsr/models/15000_netSR.pth
+    # path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
     strict_load: true
 
 netD3:
@@ -68,7 +69,7 @@ netD3:
     nb: 5
     stride: 1
   pretrain:
-    path: ~ #log/CycleSR2017Track1_edsr/models/15000_netD3.pth
+    path: log/CycleSR2017Track1_edsr/models/15000_netD3.pth
     strict_load: true
   
 #### network structures  
@@ -80,8 +81,7 @@ netG1:
     zero_tail: true
     scale: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netG1.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netG1.pth
+    path: log/CycleSR2017Track1_edsr/models/15000_netG1.pth
     strict_load: true
 
 netD1:
@@ -92,8 +92,7 @@ netD1:
     nb: 5
     stride: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netD1.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netD1.pth
+    path: log/CycleSR2017Track1_edsr/models/15000_netD1.pth
     strict_load: true
 
 netG2:
@@ -104,8 +103,7 @@ netG2:
     zero_tail: true
     scale: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netG2.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netG2.pth
+    path: log/CycleSR2017Track1_edsr/models/15000_netG2.pth
     strict_load: true
 
 netD2:
@@ -116,13 +114,12 @@ netD2:
     nb: 5
     stride: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netD2.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netD2.pth
+    path: log/CycleSR2017Track1_edsr/models/15000_netD2.pth
     strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: ~ # log/CycleSR2017Track1_edsr/training_state/15000.state
+  resume_state: log/CycleSR2017Track1_edsr/training_state/15000.state
 
   losses:
     sr_adv:

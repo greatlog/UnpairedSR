@@ -11,8 +11,8 @@ sys.path.append("../")
 from utils import ProgressBar
 
 # configurations
-img_folder = "/mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini/*"
-lmdb_save_path = "/mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb"
+img_folder = "/mnt/raid/lzx/SRDatasets/NTIRE2018/track2/valid_mild_mini/*"
+lmdb_save_path = "/mnt/raid/lzx/SRDatasets/NTIRE2018/track2/valid_mild_mini.lmdb"
 meta_info = {"name": "valid_mini"}
 
 mode = (

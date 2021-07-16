@@ -11,6 +11,26 @@ from .base_model import BaseModel
 logger = logging.getLogger("base")
 
 
+class Quant(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input):
+        output = torch.clamp(input, 0, 1)
+        output = (output * 255.).round() / 255.
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output
+
+class Quantization(nn.Module):
+    def __init__(self):
+        super(Quantization, self).__init__()
+
+    def forward(self, input):
+        return Quant.apply(input)
+
+
 @MODEL_REGISTRY.register()
 class CycleSRModel(BaseModel):
     def __init__(self, opt):
@@ -46,6 +66,7 @@ class CycleSRModel(BaseModel):
 
         if self.is_train:
             train_opt = opt["train"]
+            self.quant = Quantization()
 
             # build networks
             for name in self.network_names[1:]:
@@ -104,7 +125,7 @@ class CycleSRModel(BaseModel):
     
     def forward_sr(self):
         # self.fake_real_lr = self.netG1(self.syn_lr)
-        self.fake_syn_hr = self.netSR(self.fake_real_lr.detach())
+        self.fake_syn_hr = self.netSR(self.quant(self.fake_real_lr).detach())
     
     def optimize_trans_models(self, step, loss_dict):
         # set D fixed
@@ -125,7 +146,7 @@ class CycleSRModel(BaseModel):
         loss_dict["g2_adv"] = g2_adv_loss.item()
         loss_trans += self.loss_weights["g2_d2_adv"] * g2_adv_loss
 
-        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_real_lr, self.real_lr)
+        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_syn_lr, self.syn_lr)
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
         loss_trans += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
@@ -141,7 +162,7 @@ class CycleSRModel(BaseModel):
             loss_dict["g2_idt"] = g2_idt.item()
             loss_trans += self.loss_weights["g2_idt"] * g2_idt
 
-        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_syn_lr, self.syn_lr)
+        g2g1_cycle = self.losses["g2g1_cycle"](self.rec_real_lr, self.real_lr)
         loss_dict["g2g1_cycle"] = g2g1_cycle.item()
         loss_trans += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
@@ -217,9 +238,10 @@ class CycleSRModel(BaseModel):
                 self.netD3, self.losses["sr_adv"], self.syn_hr, self.fake_syn_hr
             )
             loss_dict["sr_adv_d"] = sr_adv_d.item()
+            loss_D = self.loss_weights["sr_adv"] * sr_adv_d
 
             self.optimizers["netD3"].zero_grad()
-            sr_adv_d.backward()
+            loss_D.backward()
             self.optimizers["netD3"].step()
         
         return loss_dict

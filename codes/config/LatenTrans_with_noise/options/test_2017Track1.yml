@@ -8,12 +8,12 @@ gpu_ids: [0]
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque] 
 
 datasets:
-  # test1:
-  #   name: 2017Track2
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
-  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  test1:
+    name: 2017Track2
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
   # test2:
   #   name: 2018Track2
   #   mode: PairedDataset
@@ -32,12 +32,12 @@ datasets:
   #   data_type: lmdb
   #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_wild.lmdb
   #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  test5:
-    name: 2020Track1
-    mode: PairedDataset
-    data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/tracck1/track1_valid_input.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  # test5:
+  #   name: 2020Track1
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_input.lmdb
+  #   dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1_valid_gt.lmdb
 
 #### network structures
 netSR:
@@ -48,5 +48,5 @@ netSR:
     res_scale: 0.1
     upscale: 4
   pretrain: 
-    path: log/cyclesr/models/latest_netSR.pth
+    path: log/cyclesr/models/15000_netSR.pth
     strict_load: true

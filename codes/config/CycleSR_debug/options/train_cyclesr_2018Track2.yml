@@ -1,9 +1,9 @@
 #### general settings
-name: CycleSR2017Track1_edsr
+name: CycleSR2018Track2_edsr
 use_tb_logger: false
 model: CycleSRModel
 scale: 4
-gpu_ids: [3]
+gpu_ids: [0]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -17,7 +17,7 @@ datasets:
 
     dataroot_ref_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
     dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2018/track2/train_mild_half.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -28,12 +28,12 @@ datasets:
     use_rot: true
 
   val:
-    name: 2017Track1_mini
+    name: 2018Track2_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2018/track2/valid_mild_mini.lmdb
     dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -80,8 +80,7 @@ netG1:
     zero_tail: true
     scale: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netG1.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netG1.pth
+    path: log/Trans2018Track2/models/latest_netG1.pth
     strict_load: true
 
 netD1:
@@ -92,8 +91,7 @@ netD1:
     nb: 5
     stride: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netD1.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netD1.pth
+    path: log/Trans2018Track2/models/latest_netD1.pth
     strict_load: true
 
 netG2:
@@ -104,8 +102,7 @@ netG2:
     zero_tail: true
     scale: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netG2.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netG2.pth
+    path: log/Trans2018Track2/models/latest_netG2.pth
     strict_load: true
 
 netD2:
@@ -116,13 +113,12 @@ netD2:
     nb: 5
     stride: 1
   pretrain:
-    path: log/Trans2017Track1/models/80000_netD2.pth
-    # path: log/CycleSR2017Track1_edsr/models/15000_netD2.pth
+    path: log/Trans2018Track2/models/latest_netD2.pth
     strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: ~ # log/CycleSR2017Track1_edsr/training_state/15000.state
+  resume_state: ~
 
   losses:
     sr_adv:

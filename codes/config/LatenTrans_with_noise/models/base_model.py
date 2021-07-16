@@ -139,12 +139,6 @@ class BaseModel:
     def set_train_state(self, names, state):
         for name in names:
             getattr(self.networks[name], state)()
-    
-    def clip_grad_norm(self, names, norm):
-        for name in names:
-            nn.utils.clip_grad_norm_(
-                self.networks[name].parameters(), max_norm=norm
-            )
 
     def _set_lr(self, lr_groups_l):
         """set learning rate for warmup,
@@ -242,7 +236,7 @@ class BaseModel:
         ), "Wrong lengths of schedulers"
         for name, o in resume_optimizers.items():
             self.optimizers[name].load_state_dict(o)
-        for name, s in resume_schedulers.items():
+        for name, o in resume_schedulers.items():
             self.schedulers[name].load_state_dict(s)
 
     def reduce_loss_dict(self, loss_dict):

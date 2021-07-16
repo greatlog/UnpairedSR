@@ -116,7 +116,7 @@ class CycleSRModel(BaseModel):
 
     def forward_trans(self):
         self.fake_real_lr = self.netG1(self.syn_lr)
-        self.fake_syn_hr = self.netSR(self.quant(self.fake_real_lr))
+        self.fake_syn_hr = self.netSR(self.fake_real_lr)
 
         self.rec_syn_lr = self.netG2(self.fake_real_lr)
 
@@ -124,7 +124,7 @@ class CycleSRModel(BaseModel):
         self.rec_real_lr = self.netG1(self.fake_syn_lr)
     
     def forward_sr(self):
-        # self.fake_real_lr = self.netG1(self.syn_lr)
+        self.fake_real_lr = self.netG1(self.syn_lr)
         self.fake_syn_hr = self.netSR(self.quant(self.fake_real_lr).detach())
     
     def optimize_trans_models(self, step, loss_dict):
@@ -249,7 +249,7 @@ class CycleSRModel(BaseModel):
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
-        loss_dict = self.optimize_trans_models(step, loss_dict)
+        # loss_dict = self.optimize_trans_models(step, loss_dict)
         loss_dict = self.optimize_sr_models(step, loss_dict)
 
         for k, v in loss_dict.items():
@@ -257,7 +257,7 @@ class CycleSRModel(BaseModel):
     
     def calculate_gan_loss_D(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(self.quant(fake).detach())
+        d_pred_fake = netD(fake.detach())
         d_pred_real = netD(real)
 
         loss_real = criterion(d_pred_real, True, is_disc=True)
@@ -267,7 +267,7 @@ class CycleSRModel(BaseModel):
 
     def calculate_gan_loss_G(self, netD, criterion, real, fake):
 
-        d_pred_fake = netD(self.quant(fake))
+        d_pred_fake = netD(fake)
         loss_real = criterion(d_pred_fake, True, is_disc=False)
 
         return loss_real

@@ -14,6 +14,23 @@ def default_conv(in_channels, out_channels, kernel_size, bias=True):
     )
 
 
+class MeanShift(nn.Conv2d):
+    def __init__(
+        self,
+        rgb_range,
+        rgb_mean=(0.4488, 0.4371, 0.4040),
+        rgb_std=(1.0, 1.0, 1.0),
+        sign=-1,
+    ):
+        super(MeanShift, self).__init__(3, 3, kernel_size=1)
+        std = torch.Tensor(rgb_std)
+        self.weight.data = torch.eye(3).view(3, 3, 1, 1)
+        self.weight.data.div_(std.view(3, 1, 1, 1))
+        self.bias.data = sign * rgb_range * torch.Tensor(rgb_mean)
+        self.bias.data.div_(std)
+        self.requires_grad = False
+
+
 class BasicBlock(nn.Sequential):
     def __init__(
         self,
@@ -100,73 +117,60 @@ class Upsampler(nn.Sequential):
 
         super(Upsampler, self).__init__(*m)
 
-class Quant(torch.autograd.Function):
 
-    @staticmethod
-    def forward(ctx, input):
-        output = torch.clamp(input, 0, 1)
-        output = (output * 255.).round() / 255.
-        return output
+def make_model(args, parent=False):
+    return RCAN(args)
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
 
-class Quantization(nn.Module):
-    def __init__(self):
-        super(Quantization, self).__init__()
+## Channel Attention (CA) Layer
 
-    def forward(self, input):
-        return Quant.apply(input)
 
 @ARCH_REGISTRY.register()
-class Translator(nn.Module):
-    def __init__(self, nb, nf, scale=4, zero_tail=False, quant=False, conv=default_conv):
-        super().__init__()
+class EDSR(nn.Module):
+    def __init__(self, nb, nf, res_scale=0.1, upscale=4, conv=default_conv):
+        super(EDSR, self).__init__()
 
-        self.scale = scale
-        self.quant = quant
-        if quant:
-            self.quant = Quantization()
+        n_resblocks = nb
+        n_feats = nf
+        kernel_size = 3
+        scale = upscale
+        act = nn.ReLU(True)
+        # url_name = 'r{}f{}x{}'.format(nb, nf, upscale)
+        # if url_name in url:
+        #     self.url = url[url_name]
+        # else:
+        #     self.url = None
+        self.sub_mean = MeanShift(255.0, sign=-1)
+        self.add_mean = MeanShift(255.0, sign=1)
 
         # define head module
-        if scale >= 1:
-            m_head = [conv(3, nf, 3)]
-        else:
-            s = int(1 / scale)
-            m_head = [nn.Conv2d(3, nf, kernel_size=2 * s + 1, stride=s, padding=s)]
+        m_head = [conv(3, n_feats, kernel_size)]
 
         # define body module
         m_body = [
-            ResBlock(conv, nf, 3, act=nn.ReLU(True), res_scale=1) for _ in range(nb)
+            ResBlock(conv, n_feats, kernel_size, act=act, res_scale=res_scale)
+            for _ in range(n_resblocks)
         ]
-        m_body.append(conv(nf, nf, 3))
+        m_body.append(conv(n_feats, n_feats, kernel_size))
 
         # define tail module
         m_tail = [
-            Upsampler(conv, scale, nf, act=False) if scale > 1 else nn.Identity(),
-            conv(nf, 3, 3),
+            Upsampler(conv, scale, n_feats, act=False),
+            conv(n_feats, 3, kernel_size),
         ]
 
         self.head = nn.Sequential(*m_head)
         self.body = nn.Sequential(*m_body)
         self.tail = nn.Sequential(*m_tail)
 
-        if zero_tail:
-            nn.init.constant_(self.tail[-1].weight, 0)
-            nn.init.constant_(self.tail[-1].bias, 0)
-
     def forward(self, x):
+        x = self.sub_mean(x * 255.0)
+        x = self.head(x)
 
-        f = self.head(x)
-        f = self.body(f)
-        f = self.tail(f)
+        res = self.body(x)
+        res += x
 
-        if self.scale == 1:
-            x = f + x
-        else:
-            x = f + F.interpolate(x, scale_factor=self.scale)
-        
-        if self.quant:
-            x = self.quant(x)
+        x = self.tail(res)
+        x = self.add_mean(x) / 255.0
+
         return x
