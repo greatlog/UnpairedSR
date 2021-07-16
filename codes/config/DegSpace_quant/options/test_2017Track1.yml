@@ -1,9 +1,9 @@
 #### general settings
-name: DegSpace
+name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [7]
 
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque] 
 
@@ -48,5 +48,5 @@ Decoder:
     res_scale: 1
     upscale: 4
   pretrain: 
-    path: log/2017Track1_10w/models/70000_Decoder.pth
+    path: log/2017Track1_test2/models/90000_Decoder.pth
     strict_load: true

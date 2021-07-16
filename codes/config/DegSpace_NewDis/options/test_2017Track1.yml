@@ -1,9 +1,9 @@
 #### general settings
-name: DegSpace
+name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [7]
 
 metrics: [psnr, ssim, lpips, niqe, piqe, brisque] 
 
@@ -12,7 +12,7 @@ datasets:
     name: 2017Track1
     mode: PairedDataset
     data_type: lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4.lmdb
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
   # test2:
   #   name: 2018Track2
@@ -48,5 +48,5 @@ Decoder:
     res_scale: 1
     upscale: 4
   pretrain: 
-    path: log/2017Track1_10w/models/70000_Decoder.pth
+    path: log/2017Track1_test2/models/90000_Decoder.pth
     strict_load: true
