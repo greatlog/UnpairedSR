@@ -141,8 +141,8 @@ class PatchGANDiscriminator(nn.Module):
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
 
-        kw = 3
-        padw = 0
+        kw = 4
+        padw = 1
         sequence = [
             nn.Conv2d(in_c, nf, kernel_size=kw, stride=stride, padding=padw),
             nn.LeakyReLU(0.2, True),
@@ -157,7 +157,7 @@ class PatchGANDiscriminator(nn.Module):
                     nf * nf_mult_prev,
                     nf * nf_mult,
                     kernel_size=kw,
-                    stride=1,
+                    stride=stride,
                     padding=padw,
                     bias=use_bias,
                 ),
@@ -181,7 +181,7 @@ class PatchGANDiscriminator(nn.Module):
         ]
 
         sequence += [
-            nn.Conv2d(nf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)
+            nn.Conv2d(nf * nf_mult, nf, kernel_size=kw, stride=1, padding=padw)
         ]  # output 1 channel prediction map
         self.model = nn.Sequential(*sequence)
 

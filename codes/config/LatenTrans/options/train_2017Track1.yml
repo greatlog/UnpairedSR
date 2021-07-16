@@ -3,7 +3,7 @@ name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [5]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,9 +15,9 @@ datasets:
     color: RGB
     ratios: [1, 1]
 
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
-    # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_HR_half.lmdb
+    # dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/trainx4_half.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
@@ -33,8 +33,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/validx4_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 Encoder:
@@ -82,6 +82,7 @@ netD2:
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
+  D_ratio: 5
 
   losses:
     sr_adv:

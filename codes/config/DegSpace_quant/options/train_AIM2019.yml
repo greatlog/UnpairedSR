@@ -1,0 +1,147 @@
+#### general settings
+name: AIM2019
+use_tb_logger: false
+model: LatenTransModel
+scale: 4
+gpu_ids: [3]
+metrics: [psnr, ssim]
+
+#### datasets
+datasets:
+  train:
+    name: DIV2K
+    mode: UnPairedDataset
+    data_type: lmdb
+    color: RGB
+    ratios: [1, 4]
+
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    # dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/AIM2019/train_source.lmdb
+
+    use_shuffle: true
+    n_workers: 4  # per GPU
+    batch_size: 32
+    tgt_size: 128
+    src_size: 32
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: AIM2019_mini
+    mode: PairedDataset
+    data_type: lmdb
+    color: RGB
+
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/AIM2019/valid_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+
+#### network structures
+Encoder:
+  which_network: DegModel
+  setting:
+    nf: 64
+    nb: 8
+    ksize: 31
+    scale: 4
+  pretrain: 
+    path: ~
+    strict_load: true
+
+Decoder:
+  which_network: EDSR
+  setting:
+    nf: 64
+    nb: 16
+    res_scale: 1
+    upscale: 4
+  pretrain: 
+    path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
+    strict_load: true
+
+netD1:
+  which_network: PatchGANDiscriminator
+  setting:
+    in_c: 3
+    nf: 64
+    nb: 3
+    stride: 1
+  pretrain: 
+    path: ~
+    strict_load: true
+
+# netD2:
+#   which_network: PatchGANDiscriminator
+#   setting:
+#     in_c: 3
+#     nf: 16
+#     nb: 5
+#     stride: 1
+#   pretrain: 
+#     path: ~
+#     strict_load: true
+
+#### training settings: learning rate scheme, loss
+train:
+  resume_state: ~
+  D_ratio: 1
+  max_grad_norm: 50
+  losses:
+    sr_adv:
+      type: GANLoss
+      gan_type: lsgan
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 0.0
+    
+    lr_adv:
+      type: GANLoss
+      gan_type: lsgan
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 1.0
+    
+    lr_quant:
+      type: L1Loss
+      weight: 1.0
+
+    sr_pix: 
+      type: L1Loss
+      weight: 1.0
+    
+    lr_gauss:
+      type: GaussGuided
+      ksize: 31
+      sigma: 4
+      weight: 1
+
+  optimizers:
+    Encoder:
+      type: Adam
+      lr: !!float 2e-4
+    Decoder:
+      type: Adam
+      lr: !!float 2e-4
+    netD1:
+      type: Adam
+      lr: !!float 2e-4
+    # netD2:
+    #   type: Adam
+    #   lr: !!float 2e-4
+   
+  niter: 200000
+  warmup_iter: -1  # no warm up
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [50000, 100000, 150000]
+    gamma: 0.5
+
+  manual_seed: 0
+  val_freq: !!float 5e3
+
+#### logger
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 5e3
+  

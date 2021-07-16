@@ -6,17 +6,14 @@ from multiprocessing import Pool
 import cv2
 import numpy as np
 
-try:
-    sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-    from utils.util import ProgressBar
-except ImportError:
-    pass
+sys.path.append("../")
+from utils import ProgressBar
 
 
 def main():
     """A multi-thread tool to crop sub imags."""
-    input_folder = "/mnt/SSD/xtwang/BasicSR_datasets/DIV2K800/DIV2K800"
-    save_folder = "/mnt/SSD/xtwang/BasicSR_datasets/DIV2K800/DIV2K800_sub"
+    input_folder = "/mnt/hdd/lzx/SRDatasets/DIV2K_train/source"
+    save_folder = "/mnt/hdd/lzx/SRDatasets/DIV2K_train/source_sub"
     n_thread = 20
     crop_sz = 480
     step = 240
