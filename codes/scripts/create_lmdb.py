@@ -11,9 +11,9 @@ sys.path.append("../")
 from utils import ProgressBar
 
 # configurations
-img_folder = "/mnt/raid/lzx/SRDatasets/NTIRE2018/track2/valid_mild_mini/*"
-lmdb_save_path = "/mnt/raid/lzx/SRDatasets/NTIRE2018/track2/valid_mild_mini.lmdb"
-meta_info = {"name": "valid_mini"}
+img_folder = "/mnt/raid/lzx/SRDatasets/BSRGANTest/RealSR_JPEG/*"
+lmdb_save_path = "/mnt/raid/lzx/SRDatasets/BSRGANTest/jpeg.lmdb"
+meta_info = {"name": "jpeg"}
 
 mode = (
     2  # 1 for reading all the images to memory and then writing to lmdb (more memory);

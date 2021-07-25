@@ -88,8 +88,8 @@ class SingleImageDataset(data.Dataset):
         ).float()
 
         data_dict = {
-            "img": img,
-            "img_path": img_path,
+            "src": img,
+            "src_path": img_path,
         }
 
         return data_dict
