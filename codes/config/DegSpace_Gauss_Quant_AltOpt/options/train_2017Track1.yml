@@ -1,9 +1,9 @@
 #### general settings
-name: 2017Track1_debug
+name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [5]
+gpu_ids: [0]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -129,12 +129,12 @@ train:
     #   type: Adam
     #   lr: !!float 2e-4
    
-  niter: 200000
+  niter: 150000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000, 100000, 150000]
+    milestones: [50000, 100000]
     gamma: 0.5
 
   manual_seed: 0

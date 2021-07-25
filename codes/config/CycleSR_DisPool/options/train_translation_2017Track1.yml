@@ -3,7 +3,7 @@ name: Trans2017Track1
 use_tb_logger: false
 model: CycleGANModel
 scale: 1
-gpu_ids: [4]
+gpu_ids: [6]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,14 +15,14 @@ datasets:
     color: RGB
     ratios: [1, 1]
     
-    dataroot_src: /mnt/raid/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
     n_workers: 8  # per GPU
     batch_size: 32
-    tgt_size: 32
-    src_size: 32
+    tgt_size: 120
+    src_size: 120
     use_flip: true
     use_rot: true
 
@@ -32,8 +32,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
 
 #### network structures  
 netG1:

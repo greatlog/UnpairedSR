@@ -146,7 +146,6 @@ class UnPairedDataset(data.Dataset):
             "src_path": src_path,
             "tgt_path": tgt_path,
         }
-        print(img_src.shape, img_tgt.shape)
         return data_dict
 
     def __len__(self):
