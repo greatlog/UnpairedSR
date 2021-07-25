@@ -3,7 +3,7 @@ name: Trans2017Track1
 use_tb_logger: false
 model: CycleGANModel
 scale: 1
-gpu_ids: [4]
+gpu_ids: [1]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -20,9 +20,9 @@ datasets:
 
     use_shuffle: true
     n_workers: 8  # per GPU
-    batch_size: 32
-    tgt_size: 32
-    src_size: 32
+    batch_size: 16
+    tgt_size: 120
+    src_size: 120
     use_flip: true
     use_rot: true
 

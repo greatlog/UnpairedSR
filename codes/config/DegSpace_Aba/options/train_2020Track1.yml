@@ -1,9 +1,9 @@
 #### general settings
-name: 2017Track1
+name: 2020Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [1]
+gpu_ids: [7]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,11 +13,11 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 1]
+    ratios: [1, 4]
 
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
-    # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
+    # dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
@@ -28,13 +28,13 @@ datasets:
     use_rot: true
 
   val:
-    name: 2017Track1_mini
+    name: 2020Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 Encoder:
@@ -42,7 +42,7 @@ Encoder:
   setting:
     nf: 64
     nb: 8
-    ksize: 31
+    ksize: 21
     scale: 4
   pretrain: 
     path: ~
@@ -64,28 +64,27 @@ netD1:
   setting:
     in_c: 3
     nf: 64
-    nb: 3
+    nb: 5
     stride: 1
   pretrain: 
     path: ~
     strict_load: true
 
-# netD2:
-#   which_network: PatchGANDiscriminator
-#   setting:
-#     in_c: 3
-#     nf: 16
-#     nb: 5
-#     stride: 1
-#   pretrain: 
-#     path: ~
-#     strict_load: true
+netD2:
+  which_network: PatchGANDiscriminator
+  setting:
+    in_c: 3
+    nf: 16
+    nb: 5
+    stride: 1
+  pretrain: 
+    path: ~
+    strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
-  D_ratio: 1
-  max_grad_norm: 50
+  D_ratio: 5
   losses:
     sr_adv:
       type: GANLoss
@@ -100,20 +99,10 @@ train:
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 1.0
-    
-    lr_quant:
-      type: L1Loss
-      weight: 1.0
 
     sr_pix: 
       type: L1Loss
-      weight: 1.0
-    
-    lr_gauss:
-      type: GaussGuided
-      ksize: 31
-      sigma: 4
-      weight: 1
+      weight: 10.0
 
   optimizers:
     Encoder:
@@ -125,23 +114,22 @@ train:
     netD1:
       type: Adam
       lr: !!float 2e-4
-    # netD2:
-    #   type: Adam
-    #   lr: !!float 2e-4
+    netD2:
+      type: Adam
+      lr: !!float 2e-4
    
   niter: 200000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000, 100000, 150000]
+    milestones: [100000]
     gamma: 0.5
 
   manual_seed: 0
-  val_freq: !!float 5e3
+  val_freq: !!float 5e2
 
 #### logger
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 5e3
-  
+  save_checkpoint_freq: !!float 5e2
