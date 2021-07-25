@@ -3,7 +3,7 @@ name: cggan
 use_tb_logger: false
 model: CGGANModel
 scale: 4
-gpu_ids: [4]
+gpu_ids: [2]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,26 +15,26 @@ datasets:
     color: RGB
     ratios: [4, 1]
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
-    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
+    dataroot_ref_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+    dataroot_ref_src: /mnt/raid/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
-    batch_size: 32
-    tgt_size: 128
-    src_size: 32
+    batch_size: 8
+    tgt_size: 480
+    src_size: 120
     use_flip: true
     use_rot: true
 
   val:
-    name: 2020Track1_mini
+    name: 2017Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 netSR:
@@ -82,11 +82,12 @@ netD1:
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
+  buffer_size: 12
 
   losses:
     sr_pix:
       type: L1Loss
-      weight: 10.0
+      weight: 1
 
     srd2_adv:
       type: GANLoss

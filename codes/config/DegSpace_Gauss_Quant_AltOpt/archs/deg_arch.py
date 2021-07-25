@@ -44,3 +44,4 @@ class DegModel(nn.Module):
         x = x + noise
         
         return x, kernel.view(B, self.ksize**2, *z.shape[2:])
+

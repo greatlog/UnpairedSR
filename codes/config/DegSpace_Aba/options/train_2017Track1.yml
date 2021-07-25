@@ -1,9 +1,9 @@
 #### general settings
-name: AIM2019
+name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [3]
+gpu_ids: [1]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -13,27 +13,27 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 4]
+    ratios: [1, 1]
 
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
     # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/train_source.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
-    batch_size: 8
-    tgt_size: 480
-    src_size: 120
+    batch_size: 32
+    tgt_size: 128
+    src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: AIM2019_mini
+    name: 2017Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/valid_mini.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
     dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -86,8 +86,6 @@ train:
   resume_state: ~
   D_ratio: 1
   max_grad_norm: 50
-  buffer_size: 12
-  
   losses:
     sr_adv:
       type: GANLoss
@@ -108,7 +106,7 @@ train:
       weight: 1.0
 
     sr_pix: 
-      type: MSELoss
+      type: L1Loss
       weight: 1.0
     
     lr_gauss:
@@ -120,23 +118,23 @@ train:
   optimizers:
     Encoder:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     Decoder:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     # netD2:
     #   type: Adam
     #   lr: !!float 2e-4
    
-  niter: 150000
+  niter: 200000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000, 100000]
+    milestones: [50000, 100000, 150000]
     gamma: 0.5
 
   manual_seed: 0

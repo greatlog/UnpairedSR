@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+import random
 
 import torch
 import torch.nn as nn
@@ -43,6 +44,8 @@ class CGGANModel(BaseModel):
 
         if self.is_train:
             train_opt = opt["train"]
+            self.fake_lr_buffer = ShuffleBuffer(train_opt["buffer_size"])
+            self.fake_sr_buffer = ShuffleBuffer(train_opt["buffer_size"])
 
             # build networks
             for name in self.network_names[1:]:
@@ -127,7 +130,6 @@ class CGGANModel(BaseModel):
                 loss_dict["sr_style"] = sr_style.item()
                 loss_G += self.loss_weights["sr_percep"] * sr_style
             loss_G += self.loss_weights["sr_percep"] * sr_percep
-
         
         if self.losses.get("sr_tv"):
             sr_tv = self.losses["sr_tv"](self.fake_real_hr)
@@ -143,14 +145,16 @@ class CGGANModel(BaseModel):
 
         loss_D = 0
         loss_d1 = self.calculate_gan_loss_D(
-            self.netD1, self.losses["g1d1_adv"], self.real_lr, self.fake_real_lr
+            self.netD1, self.losses["g1d1_adv"], self.real_lr,
+            self.fake_lr_buffer.choose(self.fake_real_lr.detach())
         )
         loss_dict["d1_adv"] = loss_d1.item()
         loss_D += loss_d1
 
         if self.losses.get("srd2_adv"):
             loss_d2 = self.calculate_gan_loss_D(
-                self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_syn_hr
+                self.netD2, self.losses["srd2_adv"], self.syn_hr,
+                self.fake_sr_buffer.choose(self.fake_syn_hr.detach())
             )
             loss_dict["d2_adv"] = loss_d2.item()
             loss_D += loss_d2
@@ -216,3 +220,47 @@ class CGGANModel(BaseModel):
         out_dict["lr"] = self.real_lr.detach()[0].float().cpu()
         out_dict["sr"] = self.fake_real_hr.detach()[0].float().cpu()
         return out_dict
+
+
+class ShuffleBuffer():
+    """Random choose previous generated images or ones produced by the latest generators.
+    :param buffer_size: the size of image buffer
+    :type buffer_size: int
+    """
+
+    def __init__(self, buffer_size):
+        """Initialize the ImagePool class.
+        :param buffer_size: the size of image buffer
+        :type buffer_size: int
+        """
+        self.buffer_size = buffer_size
+        self.num_imgs = 0
+        self.images = []
+
+    def choose(self, images, prob=0.5):
+        """Return an image from the pool.
+        :param images: the latest generated images from the generator
+        :type images: list
+        :param prob: probability (0~1) of return previous images from buffer
+        :type prob: float
+        :return: Return images from the buffer
+        :rtype: list
+        """
+        return_images = []
+        for image in images:
+            image = torch.unsqueeze(image.data, 0)
+            if self.num_imgs < self.buffer_size:
+                self.images.append(image)
+                return_images.append(image)
+                self.num_imgs += 1
+            else:
+                p = random.uniform(0, 1)
+                if p < prob:
+                    idx = random.randint(0, self.buffer_size - 1)
+                    stored_image = self.images[idx].clone()
+                    self.images[idx] = image
+                    return_images.append(stored_image)
+                else:
+                    return_images.append(image)
+        return_images = torch.cat(return_images, 0)
+        return return_images
