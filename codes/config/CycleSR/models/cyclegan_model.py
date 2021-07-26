@@ -138,8 +138,8 @@ class CycleGANModel(BaseModel):
         loss_G += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
         self.set_optimizer(names=["netG1", "netG2"], operation="zero_grad")
-        self.clip_grad_norm(names=["netG1", "netG2"], norm=self.max_grad_norm)
         loss_G.backward()
+        self.clip_grad_norm(names=["netG1", "netG2"], norm=self.max_grad_norm)
         self.set_optimizer(names=["netG1", "netG2"], operation="step")
 
         ## update D1, D2
@@ -161,8 +161,8 @@ class CycleGANModel(BaseModel):
         loss_D += loss_d2
 
         self.set_optimizer(names=["netD1", "netD2"], operation="zero_grad")
-        self.clip_grad_norm(names=["netD1","netD2"], norm=self.max_grad_norm)
         loss_D.backward()
+        self.clip_grad_norm(names=["netD1","netD2"], norm=self.max_grad_norm)
         self.set_optimizer(names=["netD1", "netD2"], operation="step")
 
         self.log_dict = loss_dict

@@ -14,7 +14,7 @@ class IQA:
     nonreference_metrics = ["niqe", "piqe", "brisque"]
     supported_metrics = referecnce_metrics + nonreference_metrics
 
-    def __init__(self, metrics, lpips_type="vgg", cuda=False):
+    def __init__(self, metrics, lpips_type="alex", cuda=True):
         for metric in self.supported_metrics:
             if not (metric in self.supported_metrics):
                 raise KeyError(

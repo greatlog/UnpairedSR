@@ -222,6 +222,7 @@ class CycleSRModel(BaseModel):
 
             self.optimizers["netD3"].zero_grad()
             loss_D.backward()
+            self.clip_grad_norm(["netD3"], self.max_grad_norm)
             self.optimizers["netD3"].step()
         
         return loss_dict

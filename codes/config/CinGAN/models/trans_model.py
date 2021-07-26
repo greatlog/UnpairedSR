@@ -122,8 +122,8 @@ class TransModel(BaseModel):
         loss_G += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
         self.set_optimizer(names=["netG1", "netG2"], operation="zero_grad")
-        self.clip_grad_norm(names=["netG1", "netG2"], norm=self.max_grad_norm)
         loss_G.backward()
+        self.clip_grad_norm(names=["netG1", "netG2"], norm=self.max_grad_norm)
         self.set_optimizer(names=["netG1", "netG2"], operation="step")
 
         ## update D1, D2
@@ -138,8 +138,8 @@ class TransModel(BaseModel):
         loss_D += loss_d1
 
         self.set_optimizer(names=["netD1"], operation="zero_grad")
-        self.clip_grad_norm(names=["netG1"], norm=self.max_grad_norm)
         loss_D.backward()
+        self.clip_grad_norm(names=["netG1"], norm=self.max_grad_norm)
         self.set_optimizer(names=["netD1"], operation="step")
 
         self.log_dict = loss_dict

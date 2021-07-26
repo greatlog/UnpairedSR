@@ -126,8 +126,8 @@ class CinGANModel(BaseModel):
         loss_G += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
         self.set_optimizer(names=["netG1","netG2"], operation="zero_grad")
-        self.clip_grad_norm(["netG1","netG2"], norm=self.max_grad_norm)
         loss_G.backward()
+        self.clip_grad_norm(["netG1","netG2"], norm=self.max_grad_norm)
         self.set_optimizer(names=["netG1", "netG2"], operation="step")
 
         ## update D
@@ -140,8 +140,8 @@ class CinGANModel(BaseModel):
         loss_D = self.loss_weights["g1d1_adv"] * loss_d1
 
         self.set_optimizer(["netD1"], "zero_grad")
-        self.clip_grad_norm(["netD1"], self.max_grad_norm)
         loss_D.backward()
+        self.clip_grad_norm(["netD1"], self.max_grad_norm)
         self.set_optimizer(["netD1"], "step")
 
         # update sr
@@ -167,8 +167,8 @@ class CinGANModel(BaseModel):
 
 
         self.set_optimizer(names=["netG1", "netSR", "netG3"], operation="zero_grad")
-        self.clip_grad_norm(names=["netG1", "netSR", "netG3"], norm=self.max_grad_norm)
         loss_G.backward()
+        self.clip_grad_norm(names=["netG1", "netSR", "netG3"], norm=self.max_grad_norm)
         self.set_optimizer(names=["netG1", "netSR", "netG3"], operation="step")
 
         ## update D1, D2
@@ -182,8 +182,8 @@ class CinGANModel(BaseModel):
         loss_D = self.loss_weights["srd2_adv"] * loss_d2
 
         self.set_optimizer(names=["netD2"], operation="zero_grad")
-        self.clip_grad_norm(["netD2"], self.max_grad_norm)
         loss_D.backward()
+        self.clip_grad_norm(["netD2"], self.max_grad_norm)
         self.set_optimizer(names=["netD2"], operation="step")
 
         self.log_dict = loss_dict
