@@ -7,28 +7,9 @@ import torch.nn as nn
 from utils.registry import MODEL_REGISTRY
 
 from .base_model import BaseModel
+from .cyclegan_model import ShuffleBuffer
 
 logger = logging.getLogger("base")
-
-
-class Quant(torch.autograd.Function):
-
-    @staticmethod
-    def forward(ctx, input):
-        output = torch.clamp(input, 0, 1)
-        output = (output * 255.).round() / 255.
-        return output
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
-
-class Quantization(nn.Module):
-    def __init__(self):
-        super(Quantization, self).__init__()
-
-    def forward(self, input):
-        return Quant.apply(input)
 
 
 @MODEL_REGISTRY.register()
@@ -42,7 +23,7 @@ class CycleSRModel(BaseModel):
 
         self.data_names = ["syn_lr", "syn_hr", "real_lr"]
 
-        self.network_names = ["netSR", "netG1", "netG2", "netD1", "netD2"]
+        self.network_names = ["netSR", "netG1", "netG2", "netD1", "netD2", "netD3"]
         self.networks = {}
 
         self.loss_names = [
@@ -61,52 +42,50 @@ class CycleSRModel(BaseModel):
         self.optimizers = {}
 
         # define networks and load pretrained models
-        self.netSR = self.build_network(opt["netSR"])
-        self.networks["netSR"] = self.netSR
-
+        nets_opt = opt["networks"]
+        defined_network_names = list(nets_opt.keys())
+        assert set(defined_network_names).issubset(set(self.network_names))
+        
+        for name in defined_network_names:
+            setattr(self, name, self.build_network(nets_opt[name]))
+            self.networks[name] = getattr(self, name)
+            
         if self.is_train:
             train_opt = opt["train"]
-            self.quant = Quantization()
+            self.max_grad_norm = train_opt["max_grad_norm"]
 
-            # build networks
-            for name in self.network_names[1:]:
-                setattr(self, name, self.build_network(opt[name]))
-                self.networks[name] = getattr(self, name)
+            # buffer
+            self.fake_src_buffer = ShuffleBuffer(train_opt["buffer_size"])
+            self.fake_tgt_buffer = ShuffleBuffer(train_opt["buffer_size"])
 
             # define losses
             loss_opt = train_opt["losses"]
-            for name in self.loss_names:
+            defined_loss_names = list(loss_opt.keys())
+            assert set(defined_loss_names).issubset(set(self.loss_names))
+
+            for name in defined_loss_names:
                 loss_conf = loss_opt.get(name)
-                if loss_conf:
-                    if loss_conf["weight"] > 0:
-                        if name == "sr_adv":
-                            self.network_names.append("netD3")
-                            self.netD3 = self.build_network(opt["netD3"])
-                            self.networks["netD3"] = self.netD3
-                        self.loss_weights[name] = loss_conf.pop("weight")
-                        self.losses[name] = self.build_loss(loss_conf)
+                if loss_conf["weight"] > 0:
+                    self.loss_weights[name] = loss_conf.pop("weight")
+                    self.losses[name] = self.build_loss(loss_conf)
 
             # build optmizers
-            self.max_grad_norm = train_opt["max_grad_norm"]
-            self.set_train_state(self.networks, "train")
             optimizer_opt = train_opt["optimizers"]
-            for name in self.network_names:
-                if optimizer_opt.get(name):
-                    optim_config = optimizer_opt[name]
-                    self.optimizers[name] = self.build_optimizer(
-                        getattr(self, name), optim_config
-                    )
-                else:
-                    logger.info(
-                        "Network {} has no Corresponding Optimizer!!".format(name)
-                    )
+            defined_optimizer_names = list(optimizer_opt.keys())
+            assert set(defined_optimizer_names).issubset(self.networks.keys())
 
+            for name in defined_optimizer_names:
+                optim_config = optimizer_opt[name]
+                self.optimizers[name] = self.build_optimizer(
+                    getattr(self, name), optim_config
+                )
+                
             # set schedulers
             scheduler_opt = train_opt["scheduler"]
             self.setup_schedulers(scheduler_opt)
 
             # set to training state
-            self.set_train_state(self.networks.keys(), "train")
+            self.set_network_state(self.networks.keys(), "train")
     
     def feed_data(self, data):
         
@@ -124,8 +103,9 @@ class CycleSRModel(BaseModel):
         self.rec_real_lr = self.netG1(self.fake_syn_lr)
     
     def forward_sr(self):
-        self.fake_real_lr = self.netG1(self.syn_lr)
-        self.fake_syn_hr = self.netSR(self.quant(self.fake_real_lr).detach())
+        self.fake_syn_hr = self.netSR(self.fake_real_lr.detach())
+        if self.losses.get("sr_adv"):
+            self.fake_real_hr = self.netSR(self.real_lr)
     
     def optimize_trans_models(self, step, loss_dict):
         # set D fixed
@@ -170,10 +150,10 @@ class CycleSRModel(BaseModel):
         loss_dict["sr_pix"] = loss_sr_pix.item()
         loss_trans += self.loss_weights["sr_pix"] * loss_sr_pix
 
-        self.optimizer_operator(names=["netG1", "netG2"], operation="zero_grad")
+        self.set_optimizer(names=["netG1", "netG2"], operation="zero_grad")
         loss_trans.backward()
         self.clip_grad_norm(["netG1", "netG2"], self.max_grad_norm)
-        self.optimizer_operator(names=["netG1", "netG2"], operation="step")
+        self.set_optimizer(names=["netG1", "netG2"], operation="step")
 
         ## update D1, D2
         self.set_requires_grad(["netD1", "netD2"], True)
@@ -191,10 +171,10 @@ class CycleSRModel(BaseModel):
         loss_dict["d2_adv"] = loss_d2.item()
         loss_d1d2 += loss_d2
 
-        self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
+        self.set_optimizer(names=["netD1", "netD2"], operation="zero_grad")
         loss_d1d2.backward()
         self.clip_grad_norm(["netD1", "netD2"], self.max_grad_norm)
-        self.optimizer_operator(names=["netD1", "netD2"], operation="step")
+        self.set_optimizer(names=["netD1", "netD2"], operation="step")
 
         return loss_dict
     
@@ -227,10 +207,10 @@ class CycleSRModel(BaseModel):
                 l_sr += self.loss_weights["sr_percep"] * sr_style
             l_sr += self.loss_weights["sr_percep"] * sr_percep
 
-        self.optimizer_operator(names=["netSR"], operation="zero_grad")
+        self.set_optimizer(names=["netSR"], operation="zero_grad")
         l_sr.backward()
         self.clip_grad_norm(["netSR"], self.max_grad_norm)
-        self.optimizer_operator(names=["netSR"], operation="step")
+        self.set_optimizer(names=["netSR"], operation="step")
 
         if self.losses.get("sr_adv"):
             self.set_requires_grad(["netD3"], True)
@@ -249,7 +229,7 @@ class CycleSRModel(BaseModel):
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
 
-        # loss_dict = self.optimize_trans_models(step, loss_dict)
+        loss_dict = self.optimize_trans_models(step, loss_dict)
         loss_dict = self.optimize_sr_models(step, loss_dict)
 
         for k, v in loss_dict.items():

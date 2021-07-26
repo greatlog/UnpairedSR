@@ -100,35 +100,13 @@ class Upsampler(nn.Sequential):
 
         super(Upsampler, self).__init__(*m)
 
-class Quant(torch.autograd.Function):
-
-    @staticmethod
-    def forward(ctx, input):
-        output = torch.clamp(input, 0, 1)
-        output = (output * 255.).round() / 255.
-        return output
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
-
-class Quantization(nn.Module):
-    def __init__(self):
-        super(Quantization, self).__init__()
-
-    def forward(self, input):
-        return Quant.apply(input)
 
 @ARCH_REGISTRY.register()
 class Translator(nn.Module):
-    def __init__(self, nb, nf, scale=4, zero_tail=False, quant=False, conv=default_conv):
+    def __init__(self, nb, nf, scale=4, zero_tail=False, conv=default_conv):
         super().__init__()
 
         self.scale = scale
-        self.quant = quant
-        if quant:
-            self.quant = Quantization()
-
         # define head module
         if scale >= 1:
             m_head = [conv(3, nf, 3)]
@@ -167,6 +145,4 @@ class Translator(nn.Module):
         else:
             x = f + F.interpolate(x, scale_factor=self.scale)
         
-        if self.quant:
-            x = self.quant(x)
         return x

@@ -157,7 +157,7 @@ class PatchGANDiscriminator(nn.Module):
                     nf * nf_mult_prev,
                     nf * nf_mult,
                     kernel_size=kw,
-                    stride=stride,
+                    stride=2,
                     padding=padw,
                     bias=use_bias,
                 ),
@@ -182,7 +182,7 @@ class PatchGANDiscriminator(nn.Module):
 
         sequence += [
             nn.Conv2d(nf * nf_mult, nf, kernel_size=kw, stride=1, padding=padw)
-        ]  # output 1 channel prediction map
+        ]
         self.model = nn.Sequential(*sequence)
 
     def forward(self, input):

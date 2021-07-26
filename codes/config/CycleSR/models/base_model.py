@@ -127,7 +127,7 @@ class BaseModel:
             )
             logger.info(s)
 
-    def optimizer_operator(self, names, operation):
+    def set_optimizer(self, names, operation):
         for name in names:
             getattr(self.optimizers[name], operation)()
 
@@ -136,7 +136,7 @@ class BaseModel:
             for v in self.networks[name].parameters():
                 v.requires_grad = requires_grad
 
-    def set_train_state(self, names, state):
+    def set_network_state(self, names, state):
         for name in names:
             getattr(self.networks[name], state)()
     

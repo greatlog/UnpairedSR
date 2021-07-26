@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+import random
 
 import torch
 import torch.nn as nn
@@ -7,13 +8,12 @@ import torch.nn as nn
 from utils.registry import MODEL_REGISTRY
 
 from .base_model import BaseModel
-from .trans_model import ShuffleBuffer
 
 logger = logging.getLogger("base")
 
 
 @MODEL_REGISTRY.register()
-class CinGANModel(BaseModel):
+class TransModel(BaseModel):
     def __init__(self, opt):
         super().__init__(opt)
         if opt["dist"]:
@@ -21,18 +21,16 @@ class CinGANModel(BaseModel):
         else:
             self.rank = -1  # non dist training
 
-        self.data_names = ["syn_lr", "syn_hr", "real_lr"]
+        self.data_names = ["src", "tgt"]
 
-        self.network_names = ["netSR", "netG1", "netG2", "netG3", "netD1", "netD2"]
+        self.network_names = ["netG1", "netG2", "netD1"]
         self.networks = {}
 
         self.loss_names = [
-            "srd2_adv",
-            "sr_tv",
-            "srg3_cycle",
             "g1d1_adv",
+            "g1_idt",
             "g1g2_cycle",
-            "lr_tv",
+            "lr_tv"
         ]
         self.loss_weights = {}
         self.losses = {}
@@ -52,8 +50,7 @@ class CinGANModel(BaseModel):
             self.max_grad_norm = train_opt["max_grad_norm"]
 
             # buffer
-            self.fake_lr_buffer = ShuffleBuffer(train_opt["buffer_size"])
-            self.fake_hr_buffer = ShuffleBuffer(train_opt["buffer_size"])
+            self.fake_tgt_buffer = ShuffleBuffer(train_opt["buffer_size"])
 
             # define losses
             loss_opt = train_opt["losses"]
@@ -86,105 +83,64 @@ class CinGANModel(BaseModel):
 
     def feed_data(self, data):
 
-        self.syn_lr = data["ref_src"].to(self.device)
-        self.syn_hr = data["ref_tgt"].to(self.device)
-        self.real_lr = data["src"].to(self.device)
+        self.src = data["src"].to(self.device)
+        self.tgt = data["tgt"].to(self.device)
     
-    def foward_trans(self):
-        self.fake_syn_lr = self.netG1(self.real_lr)
-        self.rec_real_lr = self.netG2(self.fake_syn_lr)
-    
-    def forward_sr(self):
-        
-        self.fake_syn_lr = self.netG1(self.real_lr)
-        self.fake_real_hr = self.netSR(self.fake_syn_lr)
-        self.rec_real_lr = self.netG3(self.fake_real_hr)
+    def forward(self):
+
+        self.fake_tgt = self.netG1(self.src)
+        self.rec_src = self.netG2(self.fake_tgt)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
-        
-        # update trans
-        ## update generators
-        self.set_requires_grad(["netD1"], False)
-        self.foward_trans()
+
+        self.forward()
 
         loss_G = 0
+        # set D fixed
+        self.set_requires_grad(["netD1"], False)
 
         g1_adv_loss = self.calculate_gan_loss_G(
-            self.netD1, self.losses["g1d1_adv"], self.syn_lr, self.fake_syn_lr
+            self.netD1, self.losses["g1d1_adv"], self.tgt, self.fake_tgt
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["g1d1_adv"] * g1_adv_loss
 
+        if self.losses.get("g1_idt"):
+            self.tgt_idt = self.netG1(self.tgt)
+            g1_idt = self.losses["g1_idt"](self.tgt, self.tgt_idt)
+            loss_dict["g1_idt"] = g1_idt.item()
+            loss_G += self.loss_weights["g1_idt"] * g1_idt
+        
         if self.losses.get("lr_tv"):
-            lr_tv_loss = self.losses["lr_tv"](self.fake_syn_lr)
-            loss_dict["lr_tv"] = lr_tv_loss.item()
-            loss_G += self.loss_weights["lr_tv"] * lr_tv_loss
+            lr_tv = self.losses["lr_tv"](self.fake_tgt)
+            loss_dict["lr_tv"] = lr_tv.item()
+            loss_G += self.loss_weights["lr_tv"] * lr_tv
 
-        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_real_lr, self.real_lr)
+        g1g2_cycle = self.losses["g1g2_cycle"](self.rec_src, self.src)
         loss_dict["g1g2_cycle"] = g1g2_cycle.item()
         loss_G += self.loss_weights["g1g2_cycle"] * g1g2_cycle
 
-        self.set_optimizer(names=["netG1","netG2"], operation="zero_grad")
-        self.clip_grad_norm(["netG1","netG2"], norm=self.max_grad_norm)
+        self.set_optimizer(names=["netG1", "netG2"], operation="zero_grad")
+        self.clip_grad_norm(names=["netG1", "netG2"], norm=self.max_grad_norm)
         loss_G.backward()
         self.set_optimizer(names=["netG1", "netG2"], operation="step")
 
-        ## update D
+        ## update D1, D2
         self.set_requires_grad(["netD1"], True)
+
+        loss_D = 0
         loss_d1 = self.calculate_gan_loss_D(
-            self.netD1, self.losses["g1d1_adv"], self.syn_lr,
-            self.fake_lr_buffer.choose(self.fake_syn_lr)
+            self.netD1, self.losses["g1d1_adv"], self.tgt,
+            self.fake_tgt_buffer.choose(self.fake_tgt.detach())
         )
         loss_dict["d1_adv"] = loss_d1.item()
-        loss_D = self.loss_weights["g1d1_adv"] * loss_d1
+        loss_D += loss_d1
 
-        self.set_optimizer(["netD1"], "zero_grad")
-        self.clip_grad_norm(["netD1"], self.max_grad_norm)
+        self.set_optimizer(names=["netD1"], operation="zero_grad")
+        self.clip_grad_norm(names=["netG1"], norm=self.max_grad_norm)
         loss_D.backward()
-        self.set_optimizer(["netD1"], "step")
-
-        # update sr
-        self.set_requires_grad(["netD2"], False)
-        self.forward_sr()
-
-        loss_G = 0
-
-        srd2_adv_g = self.calculate_gan_loss_G(
-            self.netD2, self.losses["srd2_adv"], self.syn_hr, self.fake_real_hr
-        )
-        loss_dict["sr_adv"] = srd2_adv_g.item()
-        loss_G += self.loss_weights["srd2_adv"] * srd2_adv_g
-
-        if self.losses.get("sr_tv"):
-            sr_tv_loss = self.losses["sr_tv"](self.fake_real_hr)
-            loss_dict["sr_tv"] = sr_tv_loss.item()
-            loss_G += self.loss_weights["sr_tv"] * sr_tv_loss
-
-        srg3_cycle = self.losses["srg3_cycle"](self.rec_real_lr, self.real_lr)
-        loss_dict["srg3_cycle"] = srg3_cycle.item()
-        loss_G += self.loss_weights["srg3_cycle"] * srg3_cycle
-
-
-        self.set_optimizer(names=["netG1", "netSR", "netG3"], operation="zero_grad")
-        self.clip_grad_norm(names=["netG1", "netSR", "netG3"], norm=self.max_grad_norm)
-        loss_G.backward()
-        self.set_optimizer(names=["netG1", "netSR", "netG3"], operation="step")
-
-        ## update D1, D2
-        self.set_requires_grad(["netD2"], True)
-
-        loss_d2 = self.calculate_gan_loss_D(
-            self.netD2, self.losses["srd2_adv"], self.syn_hr,
-            self.fake_hr_buffer.choose(self.fake_real_hr.detach())
-        )
-        loss_dict["d1_adv"] = loss_d2.item()
-        loss_D = self.loss_weights["srd2_adv"] * loss_d2
-
-        self.set_optimizer(names=["netD2"], operation="zero_grad")
-        self.clip_grad_norm(["netD2"], self.max_grad_norm)
-        loss_D.backward()
-        self.set_optimizer(names=["netD2"], operation="step")
+        self.set_optimizer(names=["netD1"], operation="step")
 
         self.log_dict = loss_dict
     
@@ -231,16 +187,58 @@ class CinGANModel(BaseModel):
 
         return loss
 
-    def test(self, real_lr):
-        self.real_lr = real_lr.to(self.device)
-        self.set_train_state(["netSR", "netG1"], "eval")
+    def test(self, src):
+        self.src = src.to(self.device)
+        self.netG1.eval()
         with torch.no_grad():
-            self.fake_syn_lr = self.netG1(self.real_lr)
-            self.fake_real_hr = self.netSR(self.fake_syn_lr)
-        self.set_train_state(["netSR", "netG1"], "train")
+            self.fake_tgt = self.netG1(self.src)
+        self.netG1.train()
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
-        out_dict["lr"] = self.real_lr.detach()[0].float().cpu()
-        out_dict["sr"] = self.fake_real_hr.detach()[0].float().cpu()
+        out_dict["lr"] = self.src.detach()[0].float().cpu()
+        out_dict["sr"] = self.fake_tgt.detach()[0].float().cpu()
         return out_dict
+
+class ShuffleBuffer():
+    """Random choose previous generated images or ones produced by the latest generators.
+    :param buffer_size: the size of image buffer
+    :type buffer_size: int
+    """
+
+    def __init__(self, buffer_size):
+        """Initialize the ImagePool class.
+        :param buffer_size: the size of image buffer
+        :type buffer_size: int
+        """
+        self.buffer_size = buffer_size
+        self.num_imgs = 0
+        self.images = []
+
+    def choose(self, images, prob=0.5):
+        """Return an image from the pool.
+        :param images: the latest generated images from the generator
+        :type images: list
+        :param prob: probability (0~1) of return previous images from buffer
+        :type prob: float
+        :return: Return images from the buffer
+        :rtype: list
+        """
+        return_images = []
+        for image in images:
+            image = torch.unsqueeze(image.data, 0)
+            if self.num_imgs < self.buffer_size:
+                self.images.append(image)
+                return_images.append(image)
+                self.num_imgs += 1
+            else:
+                p = random.uniform(0, 1)
+                if p < prob:
+                    idx = random.randint(0, self.buffer_size - 1)
+                    stored_image = self.images[idx].clone()
+                    self.images[idx] = image
+                    return_images.append(stored_image)
+                else:
+                    return_images.append(image)
+        return_images = torch.cat(return_images, 0)
+        return return_images
