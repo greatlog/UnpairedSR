@@ -78,7 +78,7 @@ train:
   resume_state: ~
   D_ratio: 1
   max_grad_norm: 50
-  buffer_size: 16
+  buffer_size: 0
 
   losses:
     sr_adv:
@@ -113,15 +113,12 @@ train:
     Encoder:
       type: Adam
       lr: !!float 2e-4
-      betas: [0.5, 0.999]
     Decoder:
       type: Adam
       lr: !!float 2e-4
-      betas: [0.5, 0.999]
     netD1:
       type: Adam
       lr: !!float 2e-4
-      betas: [0.5, 0.999]
    
   niter: 200000
   warmup_iter: -1  # no warm up

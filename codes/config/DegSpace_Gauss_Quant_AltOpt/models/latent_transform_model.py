@@ -295,6 +295,8 @@ class ShuffleBuffer():
         :return: Return images from the buffer
         :rtype: list
         """
+        if self.buffer_size == 0:
+            return  images
         return_images = []
         for image in images:
             image = torch.unsqueeze(image.data, 0)

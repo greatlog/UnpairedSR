@@ -3,7 +3,7 @@ name: CinGAN2017Track1
 use_tb_logger: false
 model: CinGANModel
 scale: 4
-gpu_ids: [2]
+gpu_ids: [4]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -55,10 +55,10 @@ networks:
     setting:
       nf: 64
       nb: 16
-      res_scale: 0.1
+      res_scale: 1
       upscale: 4
     pretrain:
-      path: ../../../checkpoints/EDSR/edsr_baseline_x4-6b446fab.pt
+      path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
       strict_load: true
 
   netD2:

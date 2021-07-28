@@ -233,11 +233,11 @@ class CinGANModel(BaseModel):
 
     def test(self, real_lr):
         self.real_lr = real_lr.to(self.device)
-        self.set_train_state(["netSR", "netG1"], "eval")
+        self.set_network_state(["netSR", "netG1"], "eval")
         with torch.no_grad():
             self.fake_syn_lr = self.netG1(self.real_lr)
             self.fake_real_hr = self.netSR(self.fake_syn_lr)
-        self.set_train_state(["netSR", "netG1"], "train")
+        self.set_network_state(["netSR", "netG1"], "train")
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()

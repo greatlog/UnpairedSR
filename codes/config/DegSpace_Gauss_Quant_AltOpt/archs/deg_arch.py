@@ -33,8 +33,8 @@ class DegModel(nn.Module):
         ]
         self.deg_module = nn.Sequential(*deg_module)
 
-        self.deg_module[-1].weight.data[ksize**2 + 1:] = 0
-        self.deg_module[-1].bias.data[ksize**2 + 1:] = 0
+        self.deg_module[-1].weight.data[ksize**2:] = 0
+        self.deg_module[-1].bias.data[ksize**2:] = 0
 
         self.pad = nn.ReflectionPad2d(self.ksize//2)
         
