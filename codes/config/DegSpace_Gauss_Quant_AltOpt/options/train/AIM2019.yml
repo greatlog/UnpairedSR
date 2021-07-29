@@ -15,9 +15,9 @@ datasets:
     color: RGB
     ratios: [1, 4]
 
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-    # dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/AIM2019_/train_source.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/train_source.lmdb
 
     use_shuffle: true
     n_workers: 4  # per GPU
@@ -33,8 +33,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/AIM2019_/valid_mini.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/valid_mini.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 networks:

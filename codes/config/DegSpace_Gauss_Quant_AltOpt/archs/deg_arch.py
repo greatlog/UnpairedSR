@@ -18,9 +18,9 @@ class DegModel(nn.Module):
 
         last_channel_num = ksize ** 2 
         if self.jpeg:
-            last_channel_num += 3
+            last_channel_num += 1
         if self.noise:
-            last_channel_num += 3
+            last_channel_num += 1
 
         deg_module = [
             nn.Conv2d(in_nc, nf, 3, 1, 1),
@@ -57,8 +57,8 @@ class DegModel(nn.Module):
 
         # noise
         if self.noise:
-            noise_std = deg_param[:, self.ksize**2:self.ksize**2+3]
-            noise_std = noise_std.mean([2, 3], keepdim=True)
+            noise_std = deg_param[:, self.ksize**2:self.ksize**2+1]
+            # noise_std = noise_std.mean([2, 3], keepdim=True)
             noise = noise_std * torch.randn_like(z)
             x = x + noise
         else:
@@ -67,9 +67,9 @@ class DegModel(nn.Module):
         # jpeg
         if self.jpeg:
             x = torch.fft.fft2(x)
-            jpeg = deg_param[:, self.ksize**2+3:]
+            jpeg = deg_param[:, self.ksize**2+1:]
             x = x + jpeg
-            x = torch.fft.ifft2(x)
+            x = torch.fft.ifft2(x).real
         else:
             jpeg = None
         
