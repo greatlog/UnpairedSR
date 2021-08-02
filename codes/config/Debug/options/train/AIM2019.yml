@@ -1,9 +1,9 @@
 #### general settings
-name: 2017Track1
+name: AIM2019
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [4]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -13,14 +13,14 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 1]
+    ratios: [1, 4]
 
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
     # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/train_source.lmdb
 
     use_shuffle: true
-    n_workers: 8  # per GPU
+    n_workers: 4  # per GPU
     batch_size: 32
     tgt_size: 128
     src_size: 32
@@ -28,12 +28,12 @@ datasets:
     use_rot: true
 
   val:
-    name: 2017Track1_mini
+    name: AIM2019_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/valid_mini.lmdb
     dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -46,7 +46,7 @@ networks:
       ksize: 31
       scale: 4
       noise: true
-      jpeg: false
+      jpeg: true
     pretrain: 
       path: ~
       strict_load: true
@@ -79,7 +79,7 @@ train:
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
-
+  
   losses:
     sr_adv:
       type: GANLoss
@@ -103,11 +103,11 @@ train:
       type: L1Loss
       weight: 1.0
     
-    lr_gauss:
-      type: GaussGuided
-      ksize: 31
-      sigma: 4
-      weight: 1
+    # lr_gauss:
+    #   type: GaussGuided
+    #   ksize: 31
+    #   sigma: 4
+    #   weight: 1
 
   optimizers:
     Encoder:

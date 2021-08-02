@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 from utils.registry import ARCH_REGISTRY
 from .edsr import ResBlock, default_conv
+from kornia.color import yuv
 
 
 @ARCH_REGISTRY.register()
@@ -33,8 +34,11 @@ class DegModel(nn.Module):
         ]
         self.deg_module = nn.Sequential(*deg_module)
 
-        self.deg_module[-1].weight.data[ksize**2:] = 0
-        self.deg_module[-1].bias.data[ksize**2:] = 0
+        nn.init.constant_(self.deg_module[-1].weight, 0)
+        nn.init.constant_(self.deg_module[-1].bias, 0)
+
+        # self.deg_module[-1].weight.data[ksize**2:] = 0
+        self.deg_module[-1].bias.data[ksize**2//2] = 1
 
         self.pad = nn.ReflectionPad2d(self.ksize//2)
         
@@ -46,7 +50,8 @@ class DegModel(nn.Module):
         # kernel
         kernel = deg_param[:, :self.ksize**2].view(
             B, 1, self.ksize**2, *z.shape[2:]
-            ).softmax(2)
+            )
+        kernel = kernel / (kernel.sum(dim=2, keepdim=True) + 1e-16)
 
         x = x.view(B*C, 1, H, W)
         x = F.unfold(
@@ -66,10 +71,12 @@ class DegModel(nn.Module):
         
         # jpeg
         if self.jpeg:
-            x = torch.fft.fft2(x)
+            y, u, v = yuv.rgb_to_yuv(x).chunk(3, dim=1)
+            y = torch.fft.fft2(y)
             jpeg = deg_param[:, self.ksize**2+1:]
-            x = x + jpeg
-            x = torch.fft.ifft2(x).real
+            y = y + jpeg
+            y = torch.fft.ifft2(y).real()
+            x = yuv.yuv_to_rgb(torch.cat([y, u, v], dim=1))
         else:
             jpeg = None
         

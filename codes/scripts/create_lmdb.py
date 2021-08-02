@@ -11,7 +11,7 @@ sys.path.append("../")
 from utils import ProgressBar
 
 # configurations
-img_folder = "/mnt/raid/lzx/SRDatasets/BSRGANTest/RealSR_JPEG/*"
+img_folder = "/mnt/raid/lzx/SRDatasets/AIM2019/RealSR_JPEG/*"
 lmdb_save_path = "/mnt/raid/lzx/SRDatasets/BSRGANTest/jpeg.lmdb"
 meta_info = {"name": "jpeg"}
 

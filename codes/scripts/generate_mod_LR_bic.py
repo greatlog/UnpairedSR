@@ -13,11 +13,11 @@ except ImportError:
 
 def generate_mod_LR_bic():
     # set parameters
-    up_scale = 4
-    mod_scale = 4
+    up_scale = 2
+    mod_scale = 2
     # set data dir
-    sourcedir = "/mnt/raid/lzx/SRDatasets/NTIRE2018/DIV2K_train_HR/"
-    savedir = "/mnt/raid/lzx/SRDatasets/DIV2K_train/"
+    sourcedir = "/mnt/raid/lzx/SRDatasets/AIM2019/train-noisy-images"
+    savedir = "/mnt/raid/lzx/SRDatasets/AIM2019/train_LR/"
 
     saveHRpath = os.path.join(savedir, "HR", "x" + str(mod_scale))
     saveLRpath = os.path.join(savedir, "BicLR", "x" + str(up_scale))
