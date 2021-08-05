@@ -29,12 +29,13 @@ class DegModel(nn.Module):
                     conv=default_conv, n_feat=nf_kernel, kernel_size=3
                     ) for _ in range(nb_kernel)
                 ],
-            nn.Conv2d(nf_kernel, ksize ** 2, 1, 1, 0)
+            nn.Conv2d(nf_kernel, ksize ** 2, 1, 1, 0),
+            nn.Softmax(1)
         ]
         self.deg_kernel = nn.Sequential(*deg_kernel)
-        nn.init.constant_(self.deg_kernel[-1].weight, 0)
-        nn.init.constant_(self.deg_kernel[-1].bias, 0)
-        self.deg_kernel[-1].bias.data[ksize**2//2] = 1
+        # nn.init.constant_(self.deg_kernel[-1].weight, 0)
+        # nn.init.constant_(self.deg_kernel[-1].bias, 0)
+        # self.deg_kernel[-1].bias.data[ksize**2//2] = 1
 
         self.pad = nn.ReflectionPad2d(self.ksize//2)
 
@@ -71,7 +72,6 @@ class DegModel(nn.Module):
         kernel = self.deg_kernel(z).view(
             B, 1, self.ksize**2, *z.shape[2:]
         )
-        kernel = kernel / (kernel.sum(dim=2, keepdim=True) + 1e-8)
 
         x = x.view(B*C, 1, H, W)
         x = F.unfold(

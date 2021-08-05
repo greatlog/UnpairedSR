@@ -16,7 +16,6 @@ datasets:
     ratios: [40, 1]
 
     dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-    # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
     dataroot_src: /mnt/raid/lzx/SRDatasets/BSRGANTest/real.lmdb
 
     use_shuffle: true
