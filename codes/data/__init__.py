@@ -21,18 +21,18 @@ _dataset_modules = [
 ]
 
 
-def create_dataloader(dataset, dataset_opt, opt=None, sampler=None):
+def create_dataloader(dataset, dataset_opt, dist=False):
     phase = dataset_opt["phase"]
     if phase == "train":
-        if opt["dist"]:
-            world_size = torch.distributed.get_world_size()
-            num_workers = dataset_opt["n_workers"]
-            assert dataset_opt["batch_size"] % world_size == 0
-            batch_size = dataset_opt["batch_size"] // world_size
+        num_workers = dataset_opt["workers_per_gpu"]
+        batch_size = dataset_opt["imgs_per_gpu"]
+        if dist:
+            sampler = torch.utils.data.DistributedSampler(
+                dataset, shuffle=True, drop_last=True
+            )
             shuffle = False
         else:
-            num_workers = dataset_opt["n_workers"] * len(opt["gpu_ids"])
-            batch_size = dataset_opt["batch_size"]
+            sampler = None
             shuffle = True
         return torch.utils.data.DataLoader(
             dataset,
@@ -44,8 +44,20 @@ def create_dataloader(dataset, dataset_opt, opt=None, sampler=None):
             pin_memory=False,
         )
     else:
+        if dist:
+            rank = torch.distributed.get_rank()
+            world_size = torch.distributed.get_world_size()
+            indices = list(range(rank, len(dataset), world_size))
+            dataset = torch.utils.data.Subset(dataset, indices)
+
         return torch.utils.data.DataLoader(
-            dataset, batch_size=1, shuffle=False, num_workers=0, pin_memory=True
+            dataset,
+            batch_size=1,
+            shuffle=False,
+            num_workers=4,
+            sampler=None,
+            drop_last=True,
+            pin_memory=True,
         )
 
 

@@ -1,10 +1,10 @@
 #### general settings
-name: BSRGANTest
+name: 2020Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
 gpu_ids: [3]
-metrics: [niqe, piqe]
+metrics: [psnr, ssim, lpips]
 
 #### datasets
 datasets:
@@ -13,10 +13,10 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [40, 1]
+    ratios: [1, 4]
 
     dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/BSRGANTest/real.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/train_source.lmdb
 
     use_shuffle: true
     workers_per_gpu: 4  # per GPU
@@ -27,12 +27,13 @@ datasets:
     use_rot: true
 
   val:
-    name: BSRGANTest
-    mode: SingleImageDataset
+    name: 2020Track1
+    mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot: /mnt/hdd/lzx/SRDatasets/BSRGANTest/real.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 networks:
@@ -46,7 +47,7 @@ networks:
       noise: true
       nf_noise: 16
       nb_noise: 4
-      jpeg: false
+      jpeg: true
       nf_jpeg: 16
       nb_jpeg: 4
     pretrain: 
@@ -74,13 +75,13 @@ networks:
     pretrain: 
       path: ~
       strict_load: true
-
+  
   netD2:
     which_network: PatchGANDiscriminator
     setting:
       in_c: 3
-      nf: 16
-      nb: 5
+      nf: 64
+      nb: 3
       stride: 1
     pretrain: 
       path: ~
@@ -92,7 +93,7 @@ train:
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
-
+  
   losses:
     sr_adv:
       type: GANLoss
@@ -136,12 +137,12 @@ train:
       type: Adam
       lr: !!float 2e-4
    
-  niter: 20000
+  niter: 200000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [5000, 1000, 15000]
+    milestones: [50000, 100000, 150000]
     gamma: 0.5
 
   manual_seed: 0

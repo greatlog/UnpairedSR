@@ -33,9 +33,9 @@ class DegModel(nn.Module):
             nn.Softmax(1)
         ]
         self.deg_kernel = nn.Sequential(*deg_kernel)
-        # nn.init.constant_(self.deg_kernel[-1].weight, 0)
-        # nn.init.constant_(self.deg_kernel[-1].bias, 0)
-        # self.deg_kernel[-1].bias.data[ksize**2//2] = 1
+        nn.init.constant_(self.deg_kernel[-2].weight, 0)
+        nn.init.constant_(self.deg_kernel[-2].bias, 0)
+        self.deg_kernel[-2].bias.data[ksize**2//2] = 1
 
         self.pad = nn.ReflectionPad2d(self.ksize//2)
 
@@ -44,10 +44,10 @@ class DegModel(nn.Module):
                 nn.Conv2d(in_nc, nf_noise, 3, 1, 1),
                 *[
                     ResBlock(
-                        conv=default_conv, n_feat=nf_noise, kernel_size=3
+                        conv=default_conv, n_feat=nf_noise, kernel_size=1
                         ) for _ in range(nb_noise)
                     ],
-                nn.Conv2d(nf_noise, 1, 1, 1, 0, bias=False),
+                nn.Conv2d(nf_noise, 3, 1, 1, 0, bias=False),
             ]
             self.deg_noise = nn.Sequential(*deg_noise)
             nn.init.constant_(self.deg_noise[-1].weight, 0)
@@ -89,7 +89,7 @@ class DegModel(nn.Module):
         
         # jpeg
         if self.jpeg:
-            jpeg = self.deg_jpeg(z)
+            jpeg = self.deg_jpeg(x)
             y, u, v = yuv.rgb_to_yuv(x).chunk(3, dim=1)
             y = torch.fft.fft2(y)
             y = y + jpeg

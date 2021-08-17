@@ -4,11 +4,9 @@ import sys
 import torch
 from torchsummaryX import summary
 
+sys.path.append("../../")
 import utils.option as option
 from models import create_model
-from options import option
-
-sys.path.append("../../")
 
 
 parser = argparse.ArgumentParser()

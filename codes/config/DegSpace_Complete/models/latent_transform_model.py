@@ -73,6 +73,7 @@ class LatenTransModel(BaseModel):
 
             ## buffer
             self.fake_lr_buffer = ShuffleBuffer(train_opt["buffer_size"])
+            self.fake_hr_buffer = ShuffleBuffer(train_opt["buffer_size"])
 
             # define losses
             loss_opt = train_opt["losses"]
@@ -122,8 +123,8 @@ class LatenTransModel(BaseModel):
     
     def decoder_forward(self):
         self.syn_sr_quant = self.Decoder(self.quant(self.fake_real_lr).detach())
-        if self.losses.get("sr_adv"):
-            self.real_sr = self.Decoder(self.real_lr)
+        # if self.losses.get("sr_adv"):
+        #     self.real_sr = self.Decoder(self.real_lr)
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
@@ -166,8 +167,7 @@ class LatenTransModel(BaseModel):
         if step % self.D_ratio == 0:
             self.set_requires_grad(["netD1"], True)
             loss_d1 = self.calculate_gan_loss_D(
-                self.netD1, self.losses["lr_adv"],
-                self.real_lr, self.fake_lr_buffer.choose(self.fake_real_lr)
+                self.netD1, self.losses["lr_adv"], self.real_lr, self.fake_real_lr
             )
             loss_dict["d1_adv"] = loss_d1.item()
             loss_D = self.loss_weights["lr_adv"] * loss_d1
@@ -184,7 +184,8 @@ class LatenTransModel(BaseModel):
         if self.losses.get("sr_adv"):
             self.set_requires_grad(["netD2"], False)
             sr_adv_loss = self.calculate_gan_loss_G(
-                self.netD2, self.losses["sr_adv"], self.syn_hr, self.real_sr
+                self.netD2, self.losses["sr_adv"],
+                self.syn_hr, self.fake_hr_buffer.choose(self.syn_sr_quant)
             )
             loss_dict["sr_adv"] = sr_adv_loss.item()
             loss_G += self.loss_weights["sr_adv"] * sr_adv_loss
@@ -203,7 +204,8 @@ class LatenTransModel(BaseModel):
             if self.losses.get("sr_adv"):
                 self.set_requires_grad(["netD2"], True)
                 loss_d2 = self.calculate_gan_loss_D(
-                    self.netD2, self.losses["sr_adv"], self.syn_hr, self.quant(self.real_sr).detach()
+                    self.netD2, self.losses["sr_adv"],
+                    self.syn_hr, self.syn_sr_quant
                 )
                 loss_dict["d2_adv"] = loss_d2.item()
                 loss_D = self.loss_weights["sr_adv"] * loss_d2
