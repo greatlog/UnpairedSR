@@ -112,14 +112,13 @@ class LatenTransModel(BaseModel):
         self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
-        noise = torch.randn_like(self.real_lr).to(self.device)
 
         (
             self.fake_real_lr,
             self.predicted_kernel,
             self.predicted_noise,
             self.predicted_jpeg
-         ) = self.Encoder(self.syn_hr, noise)
+         ) = self.Encoder(self.syn_hr)
         
         self.syn_sr = self.Decoder(self.fake_real_lr)
     
