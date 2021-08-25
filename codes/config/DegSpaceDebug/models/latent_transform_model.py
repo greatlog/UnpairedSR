@@ -112,19 +112,16 @@ class LatenTransModel(BaseModel):
         self.real_lr = data["src"].to(self.device)
 
     def encoder_forward(self):
-
         (
             self.fake_real_lr,
             self.predicted_kernel,
             self.predicted_noise,
          ) = self.Encoder(self.syn_hr)
-        
-        self.syn_sr = self.Decoder(self.fake_real_lr)
+        self.fake_real_lr_quant = self.quant(self.fake_real_lr)
+        self.syn_sr = self.Decoder(self.fake_real_lr_quant)
     
     def decoder_forward(self):
-        self.syn_sr_quant = self.Decoder(self.quant(self.fake_real_lr).detach())
-        # if self.losses.get("sr_adv"):
-        #     self.real_sr = self.Decoder(self.real_lr)
+        self.syn_sr = self.Decoder(self.fake_real_lr_quant.detach())
 
     def optimize_parameters(self, step):
         loss_dict = OrderedDict()
@@ -137,18 +134,18 @@ class LatenTransModel(BaseModel):
 
         g1_adv_loss = self.calculate_gan_loss_G(
             self.netD1, self.losses["lr_adv"],
-            self.real_lr, self.fake_real_lr
+            self.real_lr, self.fake_real_lr_quant
         )
         loss_dict["g1_adv"] = g1_adv_loss.item()
         loss_G += self.loss_weights["lr_adv"] * g1_adv_loss
 
         sr_pix = self.losses["sr_pix_trans"](self.syn_hr, self.syn_sr)
-        loss_dict["sr_pix_trans"] = sr_pix.item()
+        # loss_dict["sr_pix_trans"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix_trans"] * sr_pix
 
         if self.losses.get("lr_quant"):
             lr_quant = self.losses["lr_quant"](
-                self.fake_real_lr, self.quant(self.fake_real_lr)
+                self.fake_real_lr, self.fake_real_lr_quant.detach()
                 )
             loss_dict["lr_qunat"] = lr_quant.item()
             loss_G += self.loss_weights["lr_quant"] * lr_quant
@@ -201,7 +198,7 @@ class LatenTransModel(BaseModel):
                 loss_G += self.loss_weights["sr_percep"] * sr_style
             loss_G += self.loss_weights["sr_percep"] * sr_percep
 
-        sr_pix = self.losses["sr_pix_sr"](self.syn_hr, self.syn_sr_quant)
+        sr_pix = self.losses["sr_pix_sr"](self.syn_hr, self.syn_sr)
         loss_dict["sr_pix_sr"] = sr_pix.item()
         loss_G += self.loss_weights["sr_pix_sr"] * sr_pix
 

@@ -1,9 +1,9 @@
 #### general settings
-name: 2020Track1
+name: AIM2019
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [1]
+gpu_ids: [0]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -16,23 +16,24 @@ datasets:
     ratios: [1, 4]
 
     dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/track1/train_source.lmdb
+    # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/train_source.lmdb
 
     use_shuffle: true
-    workers_per_gpu: 4  # per GPU
-    imgs_per_gpu: 32
+    n_workers: 4  # per GPU
+    batch_size: 32
     tgt_size: 128
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: 2020Track1
+    name: AIM2019_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/valid_mini.lmdb
     dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -40,15 +41,16 @@ networks:
   Encoder:
     which_network: DegModel
     setting:
-      in_nc: 64
-      kernel: true
       nf_kernel: 64
       nb_kernel: 8
-      ksize: 21
+      ksize: 5
       scale: 4
       noise: true
-      nf_noise: 32
+      nf_noise: 16
       nb_noise: 4
+      jpeg: false
+      nf_jpeg: 16
+      nb_jpeg: 4
     pretrain: 
       path: ~
       strict_load: true
@@ -74,17 +76,6 @@ networks:
     pretrain: 
       path: ~
       strict_load: true
-  
-  # netD2:
-  #   which_network: PatchGANDiscriminator
-  #   setting:
-  #     in_c: 3
-  #     nf: 64
-  #     nb: 3
-  #     stride: 1
-  #   pretrain: 
-  #     path: ~
-  #     strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
@@ -112,11 +103,7 @@ train:
     #   type: L1Loss
     #   weight: 1.0
 
-    sr_pix_trans: 
-      type: L1Loss
-      weight: 10
-    
-    sr_pix_sr: 
+    sr_pix: 
       type: L1Loss
       weight: 1.0
     
@@ -136,9 +123,6 @@ train:
     netD1:
       type: Adam
       lr: !!float 2e-4
-    # netD2:
-    #   type: Adam
-    #   lr: !!float 2e-4
    
   niter: 200000
   warmup_iter: -1  # no warm up

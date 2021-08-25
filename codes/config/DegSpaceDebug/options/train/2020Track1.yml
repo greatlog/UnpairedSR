@@ -3,7 +3,7 @@ name: 2020Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [1]
+gpu_ids: [5]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -43,11 +43,11 @@ networks:
       in_nc: 64
       kernel: true
       nf_kernel: 64
-      nb_kernel: 8
-      ksize: 21
+      nb_kernel: 4
+      ksize: 11
       scale: 4
       noise: true
-      nf_noise: 32
+      nf_noise: 64
       nb_noise: 4
     pretrain: 
       path: ~
@@ -108,9 +108,9 @@ train:
       fake_label_val: 0.0
       weight: !!float 1.0
     
-    # lr_quant:
-    #   type: L1Loss
-    #   weight: 1.0
+    lr_quant:
+      type: L1Loss
+      weight: 1.0
 
     sr_pix_trans: 
       type: L1Loss

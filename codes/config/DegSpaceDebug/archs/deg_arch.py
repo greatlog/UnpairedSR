@@ -10,14 +10,14 @@ from kornia.color import yuv
 @ARCH_REGISTRY.register()
 class DegModel(nn.Module):
     def __init__(
-        self, in_nc=64, scale=4,
+        self, in_nc=3, scale=4,
         kernel=True, nf_kernel=64, nb_kernel=8, ksize=21,
         noise=False, nf_noise=16, nb_noise=4
     ):
         super().__init__()
 
-        self.in_nc = in_nc
         self.scale = scale
+        self.in_nc = in_nc
 
         self.kernel = kernel
         self.noise = noise
@@ -25,35 +25,35 @@ class DegModel(nn.Module):
         if kernel:
             self.ksize = ksize
             deg_kernel = [
-                nn.Conv2d(in_nc, nf_kernel, 1, 1, 0),
+                nn.Conv2d(in_nc, nf_kernel, 3, 1, 1),
                 *[
                     ResBlock(
-                        conv=default_conv, n_feat=nf_kernel, kernel_size=1
+                        conv=default_conv, n_feat=nf_kernel, kernel_size=3
                         ) for _ in range(nb_kernel)
                     ],
                 nn.Conv2d(nf_kernel, ksize ** 2, 1, 1, 0),
                 nn.Softmax(1)
             ]
             self.deg_kernel = nn.Sequential(*deg_kernel)
-            # nn.init.constant_(self.deg_kernel[-2].weight, 0)
-            # nn.init.constant_(self.deg_kernel[-2].bias, 0)
-            # self.deg_kernel[-2].bias.data[ksize**2//2] = 1
+            nn.init.constant_(self.deg_kernel[-2].weight, 0)
+            nn.init.constant_(self.deg_kernel[-2].bias, 0)
+            self.deg_kernel[-2].bias.data[ksize**2//2] = 1
 
             self.pad = nn.ReflectionPad2d(self.ksize//2)
 
         if self.noise:
             deg_noise = [
-                nn.Conv2d(in_nc, nf_noise, 1, 1, 0),
+                nn.Conv2d(in_nc, nf_noise, 3, 1, 1),
                 *[
                     ResBlock(
-                        conv=default_conv, n_feat=nf_noise, kernel_size=1
+                        conv=default_conv, n_feat=nf_noise, kernel_size=3
                         ) for _ in range(nb_noise)
                     ],
                 nn.Conv2d(nf_noise, 1, 1, 1, 0, bias=False),
-                nn.Sigmoid()
+                # nn.Sigmoid()
             ]
             self.deg_noise = nn.Sequential(*deg_noise)
-            nn.init.constant_(self.deg_noise[-2].weight, 0)
+            nn.init.constant_(self.deg_noise[-1].weight, 0)
         
     def forward(self, x):
         B, C, H, W = x.shape
@@ -78,7 +78,7 @@ class DegModel(nn.Module):
 
         # noise
         if self.noise:
-            noise = self.deg_noise(z) * 2 - 1
+            noise = self.deg_noise(z)
             x = x + noise
         else:
             noise = None
