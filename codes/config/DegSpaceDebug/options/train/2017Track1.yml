@@ -3,7 +3,7 @@ name: 2017Track1
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [4]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -48,9 +48,6 @@ networks:
       noise: false
       nf_noise: 16
       nb_noise: 4
-      jpeg: false
-      nf_jpeg: 16
-      nb_jpeg: 4
     pretrain: 
       path: ~
       strict_load: true
@@ -99,19 +96,17 @@ train:
       fake_label_val: 0.0
       weight: !!float 1.0
     
-    # lr_quant:
-    #   type: L1Loss
-    #   weight: 0.0
-
-    sr_pix: 
+    lr_quant:
       type: L1Loss
       weight: 1.0
+
+    sr_pix_trans: 
+      type: L1Loss
+      weight: 10
     
-    # lr_gauss:
-    #   type: GaussGuided
-    #   ksize: 31
-    #   sigma: 4
-    #   weight: 0.0
+    sr_pix_sr: 
+      type: L1Loss
+      weight: 1.0
 
   optimizers:
     Encoder:

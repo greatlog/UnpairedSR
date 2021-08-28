@@ -3,7 +3,7 @@ name: AIM2019
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [3]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -15,13 +15,13 @@ datasets:
     color: RGB
     ratios: [1, 4]
 
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-    # dataroot_ref_src: /mnt/raid/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
-    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/train_source.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    # dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4_half.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/AIM2019/train_source.lmdb
 
     use_shuffle: true
-    n_workers: 4  # per GPU
-    batch_size: 32
+    workers_per_gpu: 4  # per GPU
+    imgs_per_gpu: 32
     tgt_size: 128
     src_size: 32
     use_flip: true
@@ -33,24 +33,24 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/raid/lzx/SRDatasets/AIM2019/valid_mini.lmdb
-    dataroot_tgt: /mnt/raid/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /mnt/hdd/lzx/SRDatasets/AIM2019/valid_mini.lmdb
+    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 networks:
   Encoder:
     which_network: DegModel
     setting:
-      nf_kernel: 64
-      nb_kernel: 8
-      ksize: 5
       scale: 4
+      kernel: true
+      nc_k: 64
+      nf_k: 64
+      nb_k: 4
+      ksize: 11
       noise: true
-      nf_noise: 16
-      nb_noise: 4
-      jpeg: false
-      nf_jpeg: 16
-      nb_jpeg: 4
+      nc_n: 3
+      nf_n: 64
+      nb_n: 4
     pretrain: 
       path: ~
       strict_load: true
@@ -99,19 +99,17 @@ train:
       fake_label_val: 0.0
       weight: !!float 1.0
     
-    # lr_quant:
-    #   type: L1Loss
-    #   weight: 1.0
-
-    sr_pix: 
+    lr_quant:
       type: L1Loss
       weight: 1.0
+
+    sr_pix_trans: 
+      type: L1Loss
+      weight: 10
     
-    # lr_gauss:
-    #   type: GaussGuided
-    #   ksize: 31
-    #   sigma: 4
-    #   weight: 1
+    sr_pix_sr: 
+      type: L1Loss
+      weight: 1.0
 
   optimizers:
     Encoder:
