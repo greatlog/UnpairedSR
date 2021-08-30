@@ -52,7 +52,7 @@ class DegModel(nn.Module):
                         conv=default_conv, n_feat=nf_n, kernel_size=3
                         ) for _ in range(nb_n)
                     ],
-                nn.Conv2d(nf_n, 3, 3, 1, 1, bias=False),
+                nn.Conv2d(nf_n, 1, 3, 1, 1, bias=False),
                 nn.Sigmoid()
             ]
             self.deg_noise = nn.Sequential(*deg_noise)
