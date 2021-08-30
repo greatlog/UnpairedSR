@@ -3,7 +3,7 @@ name: AIM2019
 use_tb_logger: false
 model: LatenTransModel
 scale: 4
-gpu_ids: [3]
+gpu_ids: [1]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
