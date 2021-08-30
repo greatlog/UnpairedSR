@@ -70,7 +70,7 @@ def setup_dataloaer(opt, logger):
             train_set = create_dataset(dataset_opt)
             train_loader = create_dataloader(train_set, dataset_opt, opt["dist"])
             total_iters = opt["train"]["niter"]
-            total_epochs = total_iters // len(train_loader) + 1
+            total_epochs = total_iters // (len(train_loader) - 1) + 1
             if rank == 0:
                 logger.info(
                     "Number of train images: {:,d}, iters: {:,d}".format(
