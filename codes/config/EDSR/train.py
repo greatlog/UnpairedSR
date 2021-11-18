@@ -4,6 +4,7 @@ import math
 import os
 import random
 import sys
+import time
 from collections import defaultdict
 
 import numpy as np
@@ -70,7 +71,7 @@ def setup_dataloaer(opt, logger):
             train_set = create_dataset(dataset_opt)
             train_loader = create_dataloader(train_set, dataset_opt, opt["dist"])
             total_iters = opt["train"]["niter"]
-            total_epochs = total_iters // len(train_loader) + 1
+            total_epochs = total_iters // (len(train_loader) - 1) + 1
             if rank == 0:
                 logger.info(
                     "Number of train images: {:,d}, iters: {:,d}".format(
@@ -177,14 +178,14 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             tofile=True,
         )
 
-    measure = IQA(metrics=opt["metrics"], cuda=True)
+    measure = IQA(metrics=opt["metrics"], lpips_type="alex", cuda=True)
 
     # config loggers. Before it, the log will not work
     util.setup_logger(
         "base",
         opt["path"]["log"],
         "train_" + opt["name"] + "_rank{}".format(rank),
-        level=logging.INFO,
+        level=logging.INFO if rank == 0 else logging.ERROR,
         screen=True,
         tofile=True,
     )
@@ -232,13 +233,19 @@ def main_worker(gpu, ngpus_per_node, opt, args):
     logger.info(
         "Start training from epoch: {:d}, iter: {:d}".format(start_epoch, current_step)
     )
-
+    data_time, iter_time = time.time(), time.time()
+    avg_data_time = avg_iter_time = 0
+    count = 0
     for epoch in range(start_epoch, total_epochs + 1):
         for _, train_data in enumerate(train_loader):
-            current_step += 1
 
+            current_step += 1
+            count += 1
             if current_step > total_iters:
                 break
+
+            data_time = time.time() - data_time
+            avg_data_time = (avg_data_time * (count - 1) + data_time) / count
 
             model.feed_data(train_data)
             model.optimize_parameters(current_step)
@@ -246,12 +253,18 @@ def main_worker(gpu, ngpus_per_node, opt, args):
                 current_step, warmup_iter=opt["train"]["warmup_iter"]
             )
 
+            iter_time = time.time() - iter_time
+            avg_iter_time = (avg_iter_time * (count - 1) + iter_time) / count
+
             # log
             if current_step % opt["logger"]["print_freq"] == 0:
                 logs = model.get_current_log()
-                message = "<epoch:{:3d}, iter:{:8,d}, lr:{:.3e}> ".format(
-                    epoch, current_step, model.get_current_learning_rate()
+                message = (
+                    f"<epoch:{epoch:3d}, iter:{current_step:8,d}, "
+                    f"lr:{model.get_current_learning_rate():.3e}> "
                 )
+
+                message += f'[time (data): {avg_iter_time:.3f} ({avg_data_time:.3f})] '
                 for k, v in logs.items():
                     message += "{:s}: {:.4e}; ".format(k, v)
                     # tensorboard logger
@@ -279,6 +292,9 @@ def main_worker(gpu, ngpus_per_node, opt, args):
                     logger.info("Saving models and training states.")
                     model.save(current_step)
                     model.save_training_state(epoch, current_step)
+            
+            data_time = time.time()
+            iter_time = time.time()
 
     if rank == 0:
         logger.info("Saving the final model.")
@@ -302,7 +318,7 @@ def validate(model, dataset, dist_loader, opt, measure, epoch, current_step):
         rank = 0
 
     if rank == 0:
-        pbar = tqdm(total=len(dataset))
+        pbar = tqdm(total=len(dataset), leave=False, dynamic_ncols=True)
 
     indices = list(range(rank, len(dataset), world_size))
     for (
@@ -330,6 +346,13 @@ def validate(model, dataset, dist_loader, opt, measure, epoch, current_step):
             img_dir, "{:s}_{:d}.png".format(img_name, current_step)
         )
         util.save_img(sr_img, save_img_path)
+
+        if "fake_lr" in visuals.keys():
+            fake_lr_img = util.tensor2img(visuals["fake_lr"])
+            save_img_path = os.path.join(
+                img_dir, f"fake_lr_{current_step:d}.png"
+            )
+            util.save_img(fake_lr_img, save_img_path)
 
         # calculate scores
         crop_size = opt["scale"]
@@ -368,7 +391,9 @@ def validate(model, dataset, dist_loader, opt, measure, epoch, current_step):
 
         logger_val = logging.getLogger("val")  # validation logger
         logger_val.info(message)
-
+    
+    del test_results
+    torch.cuda.empty_cache()
     return avg_results
 
 

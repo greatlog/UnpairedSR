@@ -222,6 +222,7 @@ def validate(
                     crop_border:-crop_border, crop_border:-crop_border, :
                 ]
         else:
+            gt_img = None
             cropped_gt_img = None
 
         message += "Scores - "
@@ -249,6 +250,7 @@ def validate(
                     )
             else:
                 gt_img_y = None
+                cropped_gt_img_y = None
 
             message += "Y Scores - "
             scores = measure(

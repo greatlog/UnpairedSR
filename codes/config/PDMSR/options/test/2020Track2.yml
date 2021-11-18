@@ -1,0 +1,81 @@
+## general settings
+name: 2020Track2_percep_bsrgan
+use_tb_logger: false
+model: DegSRModel
+scale: 4
+gpu_ids: [7]
+
+metrics: [niqe] 
+
+datasets:
+  # test1:
+  #   name: 2017Track1
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  # test2:
+  #   name: 2018Track2
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  # test3:
+  #   name: 2018Track3
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/valid_difficult.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  # test4:
+  #   name: 2018Track4
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/valid.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  test5:
+    name: 2020Track2
+    mode: SingleDataset
+    data_type: lmdb
+    dataroot: /home/lzx/SRDatasets/NTIRE2020/track2/test.lmdb
+
+#### network structures
+networks:
+  netDeg:
+    which_network: DegModel
+    setting:
+      scale: 4
+      nc_img: 3
+      kernel_opt:
+        spatial: false
+        nc: 3
+        nf: 64
+        nb: 8
+        head_k: 1
+        body_k: 1
+        ksize: 21
+        zero_init: true
+      noise_opt: 
+        spatial: false
+        nc: 3
+        nf: 32
+        nb: 8
+        head_k: 3
+        body_k: 3
+        dim: 1
+        zero_init: false
+    pretrain: 
+      path: log/2020Track2_deg/models/latest_netDeg.pth
+      strict_load: true
+
+  netSR:
+    which_network: RRDBNet
+    setting:
+      in_nc: 3
+      out_nc: 3
+      nf: 64
+      nb: 23
+      gc: 32
+      upscale: 4
+    pretrain: 
+      path: log/2020Track2_percep_bsrgan/models/20000_netSR.pth
+      strict_load: true

@@ -231,8 +231,8 @@ class CinGANModel(BaseModel):
 
         return loss
 
-    def test(self, real_lr):
-        self.real_lr = real_lr.to(self.device)
+    def test(self, data):
+        self.real_lr = data["src"].to(self.device)
         self.set_network_state(["netSR", "netG1"], "eval")
         with torch.no_grad():
             self.fake_syn_lr = self.netG1(self.real_lr)

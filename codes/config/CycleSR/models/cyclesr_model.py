@@ -29,6 +29,7 @@ class CycleSRModel(BaseModel):
         self.loss_names = [
             "sr_adv",
             "sr_pix",
+            "sr_pix_trans",
             "sr_percep",
             "g1_d1_adv",
             "g2_d2_adv",
@@ -146,9 +147,9 @@ class CycleSRModel(BaseModel):
         loss_dict["g2g1_cycle"] = g2g1_cycle.item()
         loss_trans += self.loss_weights["g2g1_cycle"] * g2g1_cycle
 
-        loss_sr_pix = self.losses["sr_pix"](self.fake_syn_hr, self.syn_hr)
-        loss_dict["sr_pix"] = loss_sr_pix.item()
-        loss_trans += self.loss_weights["sr_pix"] * loss_sr_pix
+        loss_sr_pix = self.losses["sr_pix_trans"](self.fake_syn_hr, self.syn_hr)
+        loss_dict["sr_pix_trans"] = loss_sr_pix.item()
+        loss_trans += self.loss_weights["sr_pix_trans"] * loss_sr_pix
 
         self.set_optimizer(names=["netG1", "netG2"], operation="zero_grad")
         loss_trans.backward()
@@ -253,34 +254,8 @@ class CycleSRModel(BaseModel):
 
         return loss_real
 
-    def calculate_rgan_loss_D(self, netD, criterion, real, fake):
-
-        d_pred_fake = netD(fake.detach())
-        d_pred_real = netD(real)
-        loss_real = criterion(
-            d_pred_real - d_pred_fake.detach().mean(), True, is_disc=True
-        )
-        loss_fake = criterion(
-            d_pred_fake - d_pred_real.detach().mean(), False, is_disc=True
-        )
-
-        loss = (loss_real + loss_fake) / 2
-
-        return loss
-
-    def calculate_rgan_loss_G(self, netD, criterion, real, fake):
-
-        d_pred_fake = netD(fake)
-        d_pred_real = netD(real).detach()
-        loss_real = criterion(d_pred_real - d_pred_fake.mean(), False, is_disc=False)
-        loss_fake = criterion(d_pred_fake - d_pred_real.mean(), True, is_disc=False)
-
-        loss = (loss_real + loss_fake) / 2
-
-        return loss
-
-    def test(self, real_lr):
-        self.real_lr = real_lr.to(self.device)
+    def test(self, data):
+        self.real_lr = data["src"].to(self.device)
         self.netSR.eval()
         with torch.no_grad():
             self.fake_real_hr = self.netSR(self.real_lr)

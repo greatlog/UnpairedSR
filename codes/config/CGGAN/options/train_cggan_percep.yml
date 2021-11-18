@@ -3,7 +3,7 @@ name: cggan_percep
 use_tb_logger: false
 model: CGGANModel
 scale: 4
-gpu_ids: [0]
+gpu_ids: [6]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,13 +15,13 @@ datasets:
     color: RGB
     ratios: [4, 1]
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2020/train_target.lmdb
-    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/BicLRx4.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/track1_train_source.lmdb
+    dataroot_ref_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    dataroot_ref_src: /home/lzx/SRDatasets/DIV2K_train/BicLR/x4.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/train_source.lmdb
 
     use_shuffle: true
-    n_workers: 4  # per GPU
-    batch_size: 32
+    workers_per_gpu: 6  # per GPU
+    imgs_per_gpu: 32
     tgt_size: 128
     src_size: 32
     use_flip: true
@@ -33,8 +33,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 netSR:
@@ -62,7 +62,6 @@ netG1:
   setting:
     nf: 64
     nb: 8
-    zero_tail: true
     scale: 1
   pretrain: 
     path: ~
@@ -82,6 +81,8 @@ netD1:
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
+  resume_state: ~
+  buffer_size: 0
 
   losses:
     sr_pix:
@@ -134,29 +135,29 @@ train:
   optimizers:
     netSR:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netG1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD1:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD2:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
   
-  niter: 100000
+  niter: 200000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000]
+    milestones: [50000, 100000, 150000]
     gamma: 0.5
 
   manual_seed: 0
-  val_freq: !!float 2.5e3
+  val_freq: !!float 5e3
 
 #### logger
 logger:
-  print_freq: 20
+  print_freq: 100
   save_checkpoint_freq: !!float 5e3

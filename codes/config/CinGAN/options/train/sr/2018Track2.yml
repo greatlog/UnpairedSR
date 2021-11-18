@@ -1,0 +1,199 @@
+#### general settings
+name: CinGAN2018Track2
+use_tb_logger: false
+model: CinGANModel
+scale: 4
+gpu_ids: [6]
+metrics: [psnr, ssim, lpips]
+
+#### datasets
+datasets:
+  train:
+    name: DIV2K
+    mode: PairedRefDataset
+    data_type: lmdb
+    color: RGB
+    ratios: [200, 200]
+
+    dataroot_ref_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+    dataroot_ref_src: /home/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/x4_half.lmdb
+
+    use_shuffle: true
+    workers_per_gpu: 8  # per GPU
+    imgs_per_gpu: 32
+    tgt_size: 128
+    src_size: 32
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: 2018Track2_mini
+    mode: PairedDataset
+    data_type: lmdb
+    color: RGB
+
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid_mini.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+
+#### network structures
+# netSR:
+#   which_network: RRDBNet
+#   setting:
+#     in_nc: 3
+#     out_nc: 3
+#     nf: 64
+#     nb: 23
+#     upscale: 4
+#   pretrain:
+#     path: ../../../checkpoints/ESRGAN/RRDB_PSNR_x4.pth
+#     strict_load: true
+
+networks:
+  netSR:
+    which_network: EDSR
+    setting:
+      nf: 64
+      nb: 16
+      res_scale: 1
+      upscale: 4
+    pretrain:
+      path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
+      strict_load: true
+
+  netD2:
+    which_network: PatchGANDiscriminator
+    setting:
+      in_c: 3
+      nf: 64
+      nb: 3
+      stride: 1
+    pretrain:
+      path: ~
+      strict_load: log/Trans2018Track2/models/latest_netD2.pth
+    
+  #### network structures  
+  netG1:
+    which_network: Translator
+    setting:
+      nf: 64
+      nb: 8
+      zero_tail: true
+      scale: 1
+    pretrain:
+      path: log/Trans2018Track2/models/latest_netG1.pth
+      strict_load: true
+
+  netD1:
+    which_network: PatchGANDiscriminator
+    setting:
+      in_c: 3
+      nf: 64
+      nb: 3
+      stride: 1
+    pretrain:
+      path: log/Trans2018Track2/models/latest_netD1.pth
+      strict_load: true
+
+  netG2:
+    which_network: Translator
+    setting:
+      nf: 64
+      nb: 8
+      zero_tail: true
+      scale: 1
+    pretrain:
+      path: log/Trans2018Track2/models/latest_netG2.pth
+      strict_load: true
+
+  netG3:
+    which_network: Translator
+    setting:
+      nf: 64
+      nb: 8
+      zero_tail: true
+      scale: 0.25
+    pretrain:
+      path: ~
+      strict_load: true
+
+#### training settings: learning rate scheme, loss
+train:
+  resume_state: ~
+  max_grad_norm: 50
+  buffer_size: 16
+
+  losses:
+    srd2_adv:
+      type: GANLoss
+      gan_type: lsgan
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 0.5
+    
+    sr_tv:
+      type: TVLoss
+      penealty: MSELoss
+      weight: 2
+
+    srg3_cycle:
+      type: L1Loss
+      weight: 10
+
+    g1d1_adv:
+      type: GANLoss
+      gan_type: lsgan
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 1.0
+    
+    lr_tv:
+      type: TVLoss
+      penealty: MSELoss
+      weight: 0.5
+    
+    g1g2_cycle:
+      type: L1Loss
+      weight: 10.0
+
+  optimizers:
+    netSR:
+      type: Adam
+      lr: !!float 1e-4
+      betas: [0.5, 0.999]
+    netG1:
+      type: Adam
+      lr: !!float 1e-4
+      betas: [0.5, 0.999]
+    netG2:
+      type: Adam
+      lr: !!float 1e-4
+      betas: [0.5, 0.999]
+    netD1:
+      type: Adam
+      lr: !!float 1e-4
+      betas: [0.5, 0.999]
+    netD2:
+      type: Adam
+      lr: !!float 1e-4
+      betas: [0.5, 0.999]
+    netG3:
+      type: Adam
+      lr: !!float 1e-4
+      betas: [0.5, 0.999]
+  
+  niter: 200000
+  warmup_iter: -1  # no warm up
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [50000, 100000, 150000]
+    gamma: 0.5
+
+  manual_seed: 0
+  val_freq: !!float 5e3
+
+#### logger
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 5e3

@@ -55,16 +55,36 @@ def img2tensor(img):
     return img
 
 
-def channel_convert(in_c, tar_type, img_list):
+def channel_convert(tar_type, img_list):
     # conversion among BGR, gray and y
-    if in_c == 3 and tar_type == "gray":  # BGR to gray
-        gray_list = [cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) for img in img_list]
-        return [np.expand_dims(img, axis=2) for img in gray_list]
-    elif in_c == 3 and tar_type == "y":  # BGR to y
-        y_list = [bgr2ycbcr(img, only_y=True) for img in img_list]
-        return [np.expand_dims(img, axis=2) for img in y_list]
-    elif in_c == 1 and tar_type == "RGB":  # gray/y to BGR
-        return [cv2.cvtColor(img, cv2.COLOR_GRAY2BGR) for img in img_list]
+    if tar_type == "gray":  # BGR to gray
+        gray_list = []
+        for img in img_list:
+            if len(img.shape) == 3:
+                if img.shape[2] == 3:
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)[:, :, None]
+                gray_list.append(img)
+            else:
+                gray_list.append(img[:, :, None])
+        return gray_list
+    elif tar_type == "y":
+        y_list = []
+        for img in img_list:
+            if len(img.shape) == 3:
+                if img.shape[2] == 3:
+                    img = bgr2ycbcr(img, only_y=True)[:, :, None]
+                y_list.append(img)
+            else:
+                y_list.append(img[:, :, None])
+        return y_list
+    elif tar_type == "RGB":
+        rbg_list = []
+        for img in img_list:
+            if len(img.shape) == 3:
+                rbg_list.append(img)
+            else:
+                rbg_list.append(cv2.cvtColor(img, cv2.COLOR_GRAY2BGR))
+        return rbg_list
     else:
         return img_list
 

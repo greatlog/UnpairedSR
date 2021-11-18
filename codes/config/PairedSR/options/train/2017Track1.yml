@@ -1,0 +1,78 @@
+#### general settings
+name: 2017Track1
+use_tb_logger: false
+model: SRModel
+scale: 4
+gpu_ids: [3]
+metrics: [psnr, ssim]
+
+#### datasets
+datasets:
+  train:
+    name: DIV2K
+    mode: PairedDataset
+    data_type: lmdb
+    color: RGB
+
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4.lmdb
+
+    use_shuffle: true
+    workers_per_gpu: 4  # per GPU
+    imgs_per_gpu: 32
+    tgt_size: 128
+    src_size: 32
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: 2017Track1
+    mode: PairedDataset
+    data_type: lmdb
+    color: RGB
+
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+
+#### network structures
+networks:
+  netSR:
+    which_network: EDSR
+    setting:
+      nf: 64
+      nb: 16
+      res_scale: 1.0
+      upscale: 4
+    pretrain: 
+      path: ~
+      strict_load: true
+
+#### training settings: learning rate scheme, loss
+train:
+  resume_state: ~
+
+  losses:
+    sr_pix: 
+      type: L1Loss
+      weight: 1.0
+
+  optimizers:
+    netSR:
+      type: Adam
+      lr: !!float 2e-4
+   
+  niter: 400000
+  warmup_iter: -1  # no warm up
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [200000]
+    gamma: 0.5
+
+  manual_seed: 0
+  val_freq: !!float 5e3
+
+#### logger
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 5e3

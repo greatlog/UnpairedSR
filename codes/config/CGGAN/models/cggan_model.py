@@ -62,7 +62,7 @@ class CGGANModel(BaseModel):
                         self.losses[name] = self.build_loss(loss_conf)
 
             # build optmizers
-            self.set_train_state(self.networks, "train")
+            self.set_network_state(self.networks, "train")
             optimizer_opt = train_opt["optimizers"]
             for name in self.network_names:
                 if optimizer_opt.get(name):
@@ -80,19 +80,23 @@ class CGGANModel(BaseModel):
             self.setup_schedulers(scheduler_opt)
 
             # set to training state
-            self.set_train_state(self.networks.keys(), "train")
-
-    def forward(self, data, step):
+            self.set_network_state(self.networks.keys(), "train")
+    
+    def feed_data(self, data):
 
         self.syn_lr = data["ref_src"].to(self.device)
         self.syn_hr = data["ref_tgt"].to(self.device)
         self.real_lr = data["src"].to(self.device)
+
+    def forward(self):
 
         self.fake_real_lr = self.netG1(self.syn_lr)
         self.fake_syn_hr = self.netSR(self.fake_real_lr)
         # self.fake_real_hr = self.netSR(self.real_lr)
 
     def optimize_parameters(self, step):
+        self.forward()
+        
         loss_dict = OrderedDict()
 
         loss_G = 0
@@ -136,9 +140,9 @@ class CGGANModel(BaseModel):
             loss_dict["sr_tv"] = sr_tv.item()
             loss_G = self.loss_weights["sr_tv"] * sr_tv
 
-        self.optimizer_operator(names=["netG1", "netSR"], operation="zero_grad")
+        self.set_optimizer(names=["netG1", "netSR"], operation="zero_grad")
         loss_G.backward()
-        self.optimizer_operator(names=["netG1", "netSR"], operation="step")
+        self.set_optimizer(names=["netG1", "netSR"], operation="step")
 
         ## update D1, D2
         self.set_requires_grad(["netD1", "netD2"], True)
@@ -159,9 +163,9 @@ class CGGANModel(BaseModel):
             loss_dict["d2_adv"] = loss_d2.item()
             loss_D += loss_d2
 
-        self.optimizer_operator(names=["netD1", "netD2"], operation="zero_grad")
+        self.set_optimizer(names=["netD1", "netD2"], operation="zero_grad")
         loss_D.backward()
-        self.optimizer_operator(names=["netD1", "netD2"], operation="step")
+        self.set_optimizer(names=["netD1", "netD2"], operation="step")
 
         self.log_dict = loss_dict
     
@@ -182,38 +186,12 @@ class CGGANModel(BaseModel):
 
         return loss_real
 
-    def calculate_rgan_loss_D(self, netD, criterion, real, fake):
-
-        d_pred_fake = netD(fake.detach())
-        d_pred_real = netD(real)
-        loss_real = criterion(
-            d_pred_real - d_pred_fake.detach().mean(), True, is_disc=False
-        )
-        loss_fake = criterion(
-            d_pred_fake - d_pred_real.detach().mean(), False, is_disc=False
-        )
-
-        loss = (loss_real + loss_fake) / 2
-
-        return loss
-
-    def calculate_rgan_loss_G(self, netD, criterion, real, fake):
-
-        d_pred_fake = netD(fake)
-        d_pred_real = netD(real).detach()
-        loss_real = criterion(d_pred_real - d_pred_fake.mean(), False, is_disc=False)
-        loss_fake = criterion(d_pred_fake - d_pred_real.mean(), True, is_disc=False)
-
-        loss = (loss_real + loss_fake) / 2
-
-        return loss
-
-    def test(self, real_lr):
-        self.real_lr = real_lr.to(self.device)
-        self.set_train_state(["netSR"], "eval")
+    def test(self, data):
+        self.real_lr = data["src"].to(self.device)
+        self.set_network_state(["netSR"], "eval")
         with torch.no_grad():
             self.fake_real_hr = self.netSR(self.real_lr)
-        self.set_train_state(["netSR"], "train")
+        self.set_network_state(["netSR"], "train")
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
@@ -246,6 +224,8 @@ class ShuffleBuffer():
         :return: Return images from the buffer
         :rtype: list
         """
+        if self.buffer_size == 0:
+            return  images
         return_images = []
         for image in images:
             image = torch.unsqueeze(image.data, 0)

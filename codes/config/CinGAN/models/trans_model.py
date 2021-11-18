@@ -187,8 +187,8 @@ class TransModel(BaseModel):
 
         return loss
 
-    def test(self, src):
-        self.src = src.to(self.device)
+    def test(self, data):
+        self.src = data["src"].to(self.device)
         self.netG1.eval()
         with torch.no_grad():
             self.fake_tgt = self.netG1(self.src)

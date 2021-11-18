@@ -184,34 +184,8 @@ class CycleGANModel(BaseModel):
 
         return loss_real
 
-    def calculate_rgan_loss_D(self, netD, criterion, real, fake):
-
-        d_pred_fake = netD(fake.detach())
-        d_pred_real = netD(real)
-        loss_real = criterion(
-            d_pred_real - d_pred_fake.detach().mean(), True, is_disc=False
-        )
-        loss_fake = criterion(
-            d_pred_fake - d_pred_real.detach().mean(), False, is_disc=False
-        )
-
-        loss = (loss_real + loss_fake) / 2
-
-        return loss
-
-    def calculate_rgan_loss_G(self, netD, criterion, real, fake):
-
-        d_pred_fake = netD(fake)
-        d_pred_real = netD(real).detach()
-        loss_real = criterion(d_pred_real - d_pred_fake.mean(), False, is_disc=False)
-        loss_fake = criterion(d_pred_fake - d_pred_real.mean(), True, is_disc=False)
-
-        loss = (loss_real + loss_fake) / 2
-
-        return loss
-
-    def test(self, src):
-        self.src = src.to(self.device)
+    def test(self, data):
+        self.src = data["src"].to(self.device)
         self.netG1.eval()
         with torch.no_grad():
             self.fake_tgt = self.netG1(self.src)

@@ -1,0 +1,133 @@
+#### general settings
+name: 2018Track4_deg_mse10
+use_tb_logger: false
+model: DegSRModel
+scale: 4
+gpu_ids: [1]
+metrics: [best_psnr, best_ssim, lpips]
+
+#### datasets
+datasets:
+  train:
+    name: DIV2K
+    mode: UnPairedDataset
+    data_type: lmdb
+    color: RGB
+    ratios: [50, 200]
+
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/x4.lmdb
+
+    use_shuffle: true
+    workers_per_gpu: 6  # per GPU
+    imgs_per_gpu: 32
+    tgt_size: 128
+    src_size: 32
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: 2018Track2
+    mode: PairedDataset
+    data_type: lmdb
+    color: RGB
+
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/valid_mini.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+
+#### network structures
+networks:
+  netDeg:
+    which_network: DegModel
+    setting:
+      scale: 4
+      nc_img: 3
+      kernel_opt: 
+        mix: false
+        spatial: false
+        nc: 64
+        nf: 64
+        nb: 16
+        head_k: 1
+        body_k: 1
+        ksize: 21
+        zero_init: true
+      noise_opt: 
+        mix: true
+        nc: 3
+        nf: 64
+        nb: 16
+        head_k: 3
+        body_k: 3
+        dim: 3
+        zero_init: true
+    pretrain: 
+      path: ~
+      strict_load: true
+
+  # netSR:
+  #   which_network: EDSR
+  #   setting:
+  #     nf: 64
+  #     nb: 16
+  #     res_scale: 1
+  #     upscale: 4
+  #   pretrain: 
+  #     path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
+  #     strict_load: true
+
+  netD1:
+    which_network: UNetDiscriminatorSN
+    setting:
+      nc: 3
+      nf: 64
+    pretrain: 
+      path: ~
+      strict_load: true
+
+#### training settings: learning rate scheme, loss
+train:
+  resume_state: ~
+  D_ratio: 1
+  max_grad_norm: 50
+  buffer_size: 0
+  optim_deg: true
+  optim_sr: false
+  
+  losses:
+    
+    lr_adv:
+      type: GANLoss
+      gan_type: lsgan
+      real_label_val: 1.0
+      fake_label_val: 0.0
+      weight: !!float 1.0
+  
+    noise_mean:
+      type: MSELoss
+      weight: 10.0
+
+  optimizers:
+    netDeg:
+      type: Adam
+      lr: !!float 2e-4
+    netD1:
+      type: Adam
+      lr: !!float 2e-4
+   
+  niter: 200000
+  warmup_iter: -1  # no warm up
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [50000, 100000, 150000]
+    gamma: 0.5
+
+  manual_seed: 0
+  val_freq: !!float 2e6
+
+#### logger
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 5e3
+  

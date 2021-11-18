@@ -13,7 +13,7 @@ from utils.registry import DATASET_REGISTRY
 
 
 @DATASET_REGISTRY.register()
-class SingleImageDataset(data.Dataset):
+class SingleDataset(data.Dataset):
     """
     Read Single Image.
     The pair is ensured by 'sorted' function, so please check the name convention.
@@ -65,7 +65,7 @@ class SingleImageDataset(data.Dataset):
             # randomly crop
             rnd_h = random.randint(0, max(0, H - cropped_size))
             rnd_w = random.randint(0, max(0, W - cropped_size))
-            img = img[rnd_h : rnd_h + cropped_size, rnd_w : rnd_w + cropped_size, :]
+            img = img[rnd_h : rnd_h + cropped_size, rnd_w : rnd_w + cropped_size]
             # augmentation - flip, rotate
             img = util.augment(
                 [img],
@@ -77,7 +77,7 @@ class SingleImageDataset(data.Dataset):
         # change color space if necessary
         if self.opt["color"]:
             # TODO during val no definition
-            img = util.channel_convert(img.shape[2], self.opt["color"], [img])[0]
+            img = util.channel_convert(self.opt["color"], [img])[0]
 
         # BGR to RGB, HWC to CHW, numpy to tensor
         if img.shape[2] == 3:

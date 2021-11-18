@@ -1,0 +1,64 @@
+#### general settings
+name: 2020Track1
+use_tb_logger: false
+model: PseudoSupModel
+scale: 4
+gpu_ids: [4]
+
+metrics: [psnr, ssim, lpips] 
+
+datasets:
+  # test1:
+  #   name: 2017Track1
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  # test2:
+  #   name: 2018Track2
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  # test3:
+  #   name: 2018Track3
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/valid_difficult.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
+  # test4:
+  #   name: 2018Track4
+  #   mode: PairedDataset
+  #   data_type: lmdb
+  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/valid.lmdb
+  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  test5:
+    name: 2020Track1
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/valid.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+
+#### network structures
+networks:
+  netSR:
+    which_network: EDSR
+    setting:
+      nf: 64
+      nb: 16
+      res_scale: 1
+      upscale: 4
+    pretrain: 
+      path: log/2020Track1/models/285000_netSR.pth
+      strict_load: true
+
+  netG1:
+    which_network: Translator
+    setting:
+      nf: 64
+      nb: 8
+      zero_tail: true
+      scale: 1
+    pretrain: 
+      path: log/2020Track1/models/285000_netG1.pth
+      strict_load: true

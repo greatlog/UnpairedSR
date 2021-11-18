@@ -1,0 +1,40 @@
+#### general settings
+name: 2018Track4
+use_tb_logger: false
+model: DegSRModel
+scale: 4
+gpu_ids: [6]
+
+metrics: [best_psnr, best_ssim, lpips] 
+
+datasets:
+  test1:
+    name: 2017Track1
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/valid.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+
+networks:
+  Encoder:
+    which_network: Translator
+    setting:
+      nb: 16
+      nf: 64
+      scale: 0.25
+      zero_tail: true
+    pretrain: 
+      path: log/2018Track4_deg/models/200000_Encoder.pth
+      strict_load: true
+
+  Decoder:
+    which_network: EDSR
+    setting:
+      nf: 64
+      nb: 16
+      res_scale: 1
+      upscale: 4
+    pretrain: 
+      # path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
+      path: log/2018Track4/models/latest_Decoder.pth
+      strict_load: true

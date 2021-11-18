@@ -46,8 +46,9 @@ def parse(opt_path, root_path=".", is_train=True):
     opt["is_train"] = is_train
     # datasets
     for phase, dataset in opt["datasets"].items():
-        phase = phase.split("_")[0]
-        dataset["phase"] = phase
+        for p in ["train", "val", "test"]:
+            if p in phase:
+                dataset["phase"] = phase
         dataset["scale"] = opt.get("scale", 1)
 
     # path

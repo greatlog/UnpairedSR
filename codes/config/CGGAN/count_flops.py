@@ -24,6 +24,6 @@ model = create_model(opt)
 
 test_tensor = torch.randn(1, 3, 270, 180).cuda()
 for name, net in model.networks.items():
-    summary(net, x=test_tensor)
+    summary(net.cuda(), x=test_tensor)
     print("Above are results for net {}".format(name))
     input()

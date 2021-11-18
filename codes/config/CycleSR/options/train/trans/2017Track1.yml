@@ -3,7 +3,7 @@ name: Trans2017Track1
 use_tb_logger: false
 model: CycleGANModel
 scale: 1
-gpu_ids: [4]
+gpu_ids: [3]
 metrics: [psnr, ssim]
 
 #### datasets
@@ -15,12 +15,12 @@ datasets:
     color: RGB
     ratios: [1, 1]
     
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
+    dataroot_src: /home/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
-    n_workers: 8  # per GPU
-    batch_size: 32
+    workers_per_gpu: 8  # per GPU
+    imgs_per_gpu: 32
     tgt_size: 32
     src_size: 32
     use_flip: true
@@ -32,8 +32,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
+    dataroot_src: /home/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
 
 #### network structures
 networks:
@@ -42,8 +42,8 @@ networks:
     setting:
       nf: 64
       nb: 8
-      zero_tail: true
       scale: 1
+      zero_tail: true
     pretrain: 
       path: ~
       strict_load: true
@@ -63,8 +63,8 @@ networks:
     setting:
       nf: 64
       nb: 8
-      zero_tail: true
       scale: 1
+      zero_tail: true
     pretrain:
       path: ~
       strict_load: true
@@ -134,12 +134,12 @@ train:
       lr: !!float 2e-4
       betas: [0.5, 0.999]
   
-  niter: 100000
+  niter: 200000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000]
+    milestones: [50000, 100000, 150000]
     gamma: 0.5
 
   manual_seed: 0

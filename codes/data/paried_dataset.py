@@ -95,13 +95,12 @@ class PairedDataset(data.Dataset):
             rnd_h = random.randint(0, max(0, H - cropped_src_size))
             rnd_w = random.randint(0, max(0, W - cropped_src_size))
             img_src = img_src[
-                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
+                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size
             ]
             rnd_h_tgt, rnd_w_tgt = int(rnd_h * scale), int(rnd_w * scale)
             img_tgt = img_tgt[
                 rnd_h_tgt : rnd_h_tgt + cropped_tgt_size,
                 rnd_w_tgt : rnd_w_tgt + cropped_tgt_size,
-                :,
             ]
             # augmentation - flip, rotate
             img_tgt, img_src = util.augment(
@@ -115,7 +114,7 @@ class PairedDataset(data.Dataset):
         if self.opt["color"]:
             # TODO during val no definition
             img_src, img_tgt = util.channel_convert(
-                img_src.shape[2], self.opt["color"], [img_src, img_tgt]
+                self.opt["color"], [img_src, img_tgt]
             )
 
         # BGR to RGB, HWC to CHW, numpy to tensor

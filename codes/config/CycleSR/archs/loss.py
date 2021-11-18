@@ -1,10 +1,42 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import lpips as lp
 
 from utils.registry import LOSS_REGISTRY
 
 from .vgg import VGGFeatureExtractor
+
+
+@LOSS_REGISTRY.register()
+class GaussGuided(nn.Module):
+    def __init__(self, ksize, sigma):
+        super().__init__()
+
+        ax = torch.arange(0, ksize) - ksize//2
+        xx, yy = torch.meshgrid(ax, ax)
+        dis = (xx ** 2 + yy ** 2)
+        dis = torch.exp(-dis / sigma ** 2)
+        dis = dis / dis.sum()
+
+        self.register_buffer("gauss", dis.view(1, ksize**2, 1, 1))
+    
+    def forward(self, kernel):
+
+        return F.mse_loss(self.gauss, kernel)
+
+@LOSS_REGISTRY.register()
+class PerceptualLossLPIPS(nn.Module):
+    def __init__(self, net="alex", normalize=True):
+        super().__init__()
+        self.fn = lp.LPIPS(net=net, spatial=True)
+        for p in self.fn.parameters():
+            p.requires_grad = False
+        
+        self.normalize = normalize
+    
+    def forward(self, res, ref):
+        return self.fn(res, ref, normalize=self.normalize).mean(), None
 
 
 @LOSS_REGISTRY.register()

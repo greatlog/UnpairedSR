@@ -16,8 +16,8 @@ def generate_mod_LR_bic():
     up_scale = 2
     mod_scale = 2
     # set data dir
-    sourcedir = "/mnt/raid/lzx/SRDatasets/AIM2019/train-noisy-images"
-    savedir = "/mnt/raid/lzx/SRDatasets/AIM2019/train_LR/"
+    sourcedir = "/mnt/hdd/lzx/SRDatasets/NTIRE2018/DIV2K_valid_HR/"
+    savedir = "/mnt/hdd/lzx/SRDatasets/DIV2K_valid/"
 
     saveHRpath = os.path.join(savedir, "HR", "x" + str(mod_scale))
     saveLRpath = os.path.join(savedir, "BicLR", "x" + str(up_scale))

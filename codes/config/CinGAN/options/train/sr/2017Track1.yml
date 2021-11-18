@@ -3,7 +3,7 @@ name: CinGAN2017Track1
 use_tb_logger: false
 model: CinGANModel
 scale: 4
-gpu_ids: [4]
+gpu_ids: [5]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -13,15 +13,15 @@ datasets:
     mode: PairedRefDataset
     data_type: lmdb
     color: RGB
-    ratios: [1, 1]
+    ratios: [200, 200]
 
-    dataroot_ref_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
-    dataroot_ref_src: /mnt/hdd/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
+    dataroot_ref_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+    dataroot_ref_src: /home/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
-    n_workers: 8  # per GPU
-    batch_size: 32
+    workers_per_gpu: 8  # per GPU
+    imgs_per_gpu: 32
     tgt_size: 128
     src_size: 32
     use_flip: true
@@ -33,8 +33,8 @@ datasets:
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /mnt/hdd/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
-    dataroot_tgt: /mnt/hdd/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 # netSR:
@@ -70,7 +70,7 @@ networks:
       stride: 1
     pretrain:
       path: ~
-      strict_load: true
+      strict_load: log/Trans2017Track1/models/latest_netD2.pth
     
   #### network structures  
   netG1:

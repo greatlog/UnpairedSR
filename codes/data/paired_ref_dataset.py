@@ -42,10 +42,13 @@ class PairedRefDataset(data.Dataset):
 
         if opt.get("ratios"):
             ratio_ref, ratio_src = opt["ratios"]
-            self.ref_src_paths *= ratio_ref; self.ref_src_sizes *= ratio_ref
-            self.ref_tgt_paths *= ratio_ref; self.ref_tgt_sizes *= ratio_ref
-            self.src_paths *= ratio_src; self.src_sizes *= ratio_src
-        
+            self.ref_src_paths *= ratio_ref
+            self.ref_src_sizes *= ratio_ref
+            self.ref_tgt_paths *= ratio_ref
+            self.ref_tgt_sizes *= ratio_ref
+            self.src_paths *= ratio_src
+            self.src_sizes *= ratio_src
+
         merged_src = list(zip(self.src_paths, self.src_sizes))
         random.shuffle(merged_src)
         self.src_paths[:], self.src_sizes[:] = zip(*merged_src)
@@ -117,7 +120,7 @@ class PairedRefDataset(data.Dataset):
             rnd_h = random.randint(0, max(0, H - cropped_src_size))
             rnd_w = random.randint(0, max(0, W - cropped_src_size))
             img_ref_src = img_ref_src[
-                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
+                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size
             ]
             rnd_h_tgt, rnd_w_tgt = int(rnd_h * scale), int(rnd_w * scale)
             img_ref_tgt = img_ref_tgt[
@@ -130,7 +133,7 @@ class PairedRefDataset(data.Dataset):
             rnd_h = random.randint(0, max(0, src_h - cropped_src_size))
             rnd_w = random.randint(0, max(0, src_w - cropped_src_size))
             img_src = img_src[
-                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size, :
+                rnd_h : rnd_h + cropped_src_size, rnd_w : rnd_w + cropped_src_size
             ]
 
             # augmentation - flip, rotate
@@ -151,7 +154,7 @@ class PairedRefDataset(data.Dataset):
         if self.opt["color"]:
             # TODO during val no definition
             img_ref_src, img_ref_tgt, img_src = util.channel_convert(
-                img_src.shape[2], self.opt["color"], [img_ref_src, img_ref_tgt, img_src]
+                self.opt["color"], [img_ref_src, img_ref_tgt, img_src]
             )
 
         # BGR to RGB, HWC to CHW, numpy to tensor

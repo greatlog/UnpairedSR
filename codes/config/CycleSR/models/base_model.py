@@ -1,15 +1,15 @@
-import os
 import logging
+import os
 from collections import OrderedDict
 
 import torch
 import torch.nn as nn
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 
-from archs import build_network, build_loss
-
+from archs import build_loss, build_network
 from utils.registry import MODEL_REGISTRY
-from .lr_scheduler import MultiStepRestartLR, CosineAnnealingRestartLR
+
+from .lr_scheduler import CosineAnnealingRestartLR, MultiStepRestartLR
 
 logger = logging.getLogger("base")
 
@@ -18,6 +18,13 @@ logger = logging.getLogger("base")
 class BaseModel:
     def __init__(self, opt):
         self.opt = opt
+
+        if opt["dist"]:
+            self.rank = torch.distributed.get_rank()
+            self.world_size = torch.distributed.get_world_size()
+        else:
+            self.rank = 0  # non dist training
+
         self.device = torch.device("cuda" if opt["gpu_ids"] is not None else "cpu")
         self.is_train = opt["is_train"]
         self.log_dict = OrderedDict()
@@ -139,12 +146,10 @@ class BaseModel:
     def set_network_state(self, names, state):
         for name in names:
             getattr(self.networks[name], state)()
-    
+
     def clip_grad_norm(self, names, norm):
         for name in names:
-            nn.utils.clip_grad_norm_(
-                self.networks[name].parameters(), max_norm=norm
-            )
+            nn.utils.clip_grad_norm_(self.networks[name].parameters(), max_norm=norm)
 
     def _set_lr(self, lr_groups_l):
         """set learning rate for warmup,
@@ -260,8 +265,8 @@ class BaseModel:
                     losses.append(value)
                 losses = torch.stack(losses, 0)
                 torch.distributed.reduce(losses, dst=0)
-                if self.opt["rank"] == 0:
-                    losses /= self.opt["world_size"]
+                if self.rank == 0:
+                    losses /= self.world_size
                 loss_dict = {key: loss for key, loss in zip(keys, losses)}
 
             log_dict = OrderedDict()

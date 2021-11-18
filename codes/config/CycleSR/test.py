@@ -193,7 +193,7 @@ def validate(
         model.test(test_data)
         visuals = model.get_current_visuals()
         sr_img = util.tensor2img(visuals["sr"])  # uint8
-
+       
         suffix = opt["suffix"]
         if suffix:
             save_img_path = os.path.join(dataset_dir, img_name + suffix + ".png")
@@ -223,7 +223,7 @@ def validate(
                 ]
         else:
             cropped_gt_img = None
-
+        
         message += "Scores - "
         scores = measure(res=cropped_sr_img, ref=cropped_gt_img, metrics=opt["metrics"])
         for k, v in scores.items():

@@ -6,11 +6,12 @@ import lpips as lp
 
 from .psnr import psnr
 from .ssim import calculate_ssim as ssim
+from .best_psnr import best_psnr
 
 
 class IQA:
 
-    referecnce_metrics = ["psnr", "ssim", "lpips"]
+    referecnce_metrics = ["psnr", "ssim", "best_psnr", "best_ssim", "lpips"]
     nonreference_metrics = ["niqe", "piqe", "brisque"]
     supported_metrics = referecnce_metrics + nonreference_metrics
 
@@ -82,6 +83,15 @@ class IQA:
 
     def calculate_piqe(self, piqe):
         return self.eng.piqe(self.matlab_res)
+    
+    def calculate_best_psnr(self, res, ref):
+        best_psnr_, best_ssim_ = best_psnr(res, ref)
+        self.best_ssim = best_ssim_
+        return best_psnr_
+    
+    def calculate_best_ssim(self, res, ref):
+        assert hasattr(self, "best_ssim")
+        return self.best_ssim
 
     @staticmethod
     def calculate_psnr(res, ref):
