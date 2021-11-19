@@ -20,6 +20,19 @@ class ResBlock(nn.Module):
     def forward(self, x):
         return torch.add(x, self.body(x))
 
+class Quantization(nn.Module):
+    def __init__(self, n=5):
+        super().__init__()
+        self.n = n
+
+    def forward(self, inp):
+        out = inp * 255.0
+        flag = -1
+        for i in range(1, self.n + 1):
+            out = out + flag / np.pi / i * torch.sin(2 * i * np.pi * inp * 255.0)
+            flag = flag * (-1)
+        return out / 255.0
+
 class KernelModel(nn.Module):
     def __init__(self, opt, scale):
         super().__init__()
@@ -135,9 +148,10 @@ class NoiseModel(nn.Module):
 
         if self.opt["nc"] > 0:     
             if self.opt["spatial"]:
-                zn = torch.randn(x.shape[0], self.opt["nc"], 1, 1).to(x.device)
-            else:
                 zn = torch.randn(x.shape[0], self.opt["nc"], H, W).to(x.device)
+            else:
+                zn = torch.randn(x.shape[0], self.opt["nc"], 1, 1).to(x.device)
+                zn = zn.repeat(1, 1, H, W)
         
         if self.opt["mix"]:
             if self.opt["nc"] > 0:

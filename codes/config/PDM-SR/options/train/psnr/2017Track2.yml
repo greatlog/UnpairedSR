@@ -1,9 +1,9 @@
   #### general settings
-  name: 2020Track1_psnr
+  name: 2017Track2_psnr
   use_tb_logger: false
   model: DegSRModel
   scale: 4
-  gpu_ids: [1]
+  gpu_ids: [0]
   metrics: [psnr, ssim, lpips]
 
   #### datasets
@@ -13,10 +13,10 @@
       mode: UnPairedDataset
       data_type: lmdb
       color: RGB
-      ratios: [50, 200]
+      ratios: [200, 200]
 
-      dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-      dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/train_source.lmdb
+      dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+      dataroot_src: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
       use_shuffle: true
       workers_per_gpu: 4  # per GPU
@@ -27,12 +27,12 @@
       use_rot: true
 
     val:
-      name: 2020Track2_mini
+      name: 2017Track2_mini
       mode: PairedDataset
       data_type: lmdb
       color: RGB
 
-      dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+      dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
       dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
   #### network structures
@@ -45,23 +45,14 @@
         kernel_opt: 
           mix: false
           spatial: false
-          nc: 3
+          nc: 64
           nf: 64
-          nb: 8
+          nb: 16
           body_k: 1
           head_k: 1
           ksize: 21
           zero_init: true
-        noise_opt:
-          mix: true
-          spatial: true
-          nc: 3
-          nf: 64
-          nb: 8
-          body_k: 3
-          head_k: 3
-          dim: 1
-          zero_init: true
+        noise_opt: ~
       pretrain: 
         path: ~
         strict_load: true
@@ -110,10 +101,6 @@
         real_label_val: 1.0
         fake_label_val: 0.0
         weight: !!float 1.0
-      
-      noise_mean: 
-        type: MSELoss
-        weight: !!float 100
 
     optimizers:
       netDeg:
