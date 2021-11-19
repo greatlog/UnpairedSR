@@ -3,8 +3,8 @@
   use_tb_logger: false
   model: DegSRModel
   scale: 4
-  gpu_ids: [3]
-  metrics: [psnr, ssim, lpips]
+  gpu_ids: [4]
+  metrics: [best_psnr, best_ssim, lpips]
 
   #### datasets
   datasets:
@@ -15,8 +15,8 @@
       color: RGB
       ratios: [50, 200]
 
-      dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-      dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/x4.lmdb
+      dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+      dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/x4_half.lmdb
 
       use_shuffle: true
       workers_per_gpu: 4  # per GPU
@@ -54,7 +54,7 @@
           zero_init: true
         noise_opt:
           mix: true
-          spatial: true
+          spatial: false
           nc: 3
           nf: 64
           nb: 8
