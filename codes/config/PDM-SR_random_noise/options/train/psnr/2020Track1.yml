@@ -54,7 +54,7 @@
           zero_init: true
         noise_opt:
           mix: true
-          spatial: true
+          spatial: false
           nc: 3
           nf: 64
           nb: 8
