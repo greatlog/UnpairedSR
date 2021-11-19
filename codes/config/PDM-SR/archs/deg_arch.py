@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import numpy as np
 
 from utils.registry import ARCH_REGISTRY
-from kornia.color import yuv, rgb_to_grayscale
 
 
 class ResBlock(nn.Module):
@@ -31,15 +30,19 @@ class KernelModel(nn.Module):
         nc, nf, nb = opt["nc"], opt["nf"], opt["nb"]
         ksize = opt["ksize"]
 
-        spatial = opt["spatial"]
-        if spatial:
+        if opt["spatial"]:
             head_k = opt["head_k"]
             body_k = opt["body_k"]
         else:
             head_k = body_k = 1
+        
+        if opt["mix"]:
+            in_nc = 3 + nc
+        else:
+            in_nc = nc
 
         deg_kernel = [
-            nn.Conv2d(nc, nf, head_k, 1, head_k//2),
+            nn.Conv2d(in_nc, nf, head_k, 1, head_k//2),
             nn.BatchNorm2d(nf), nn.ReLU(True),
             *[
                 ResBlock(nf=nf, ksize=body_k)
@@ -62,13 +65,22 @@ class KernelModel(nn.Module):
         h = H // self.scale
         w = W // self.scale
 
-        if self.opt["spatial"]:
-            zk = torch.randn(B, self.opt["nc"], H, W).to(x.device)
+        if self.opt["nc"] > 0:
+            if self.opt["spatial"]:
+                zk = torch.randn(B, self.opt["nc"], H, W).to(x.device)
+            else:
+                zk = torch.randn(B, self.opt["nc"], 1, 1).to(x.device)
+        
+        if self.opt["mix"]:
+            if self.opt["nc"] > 0:
+                inp = torch.cat([x, zk], 1)
+            else:
+                inp = x
         else:
-            zk = torch.randn(B, self.opt["nc"], 1, 1).to(x.device)
+            inp = zk          
         
         ksize = self.opt["ksize"]
-        kernel = self.deg_kernel(zk).view(B, 1, ksize**2, *zk.shape[2:])
+        kernel = self.deg_kernel(inp).view(B, 1, ksize**2, *inp.shape[2:])
 
         x = x.view(B*C, 1, H, W)
         x = F.unfold(
@@ -76,7 +88,7 @@ class KernelModel(nn.Module):
         ).view(B, C, ksize**2, h, w)
 
         x = torch.mul(x, kernel).sum(2).view(B, C, h, w)
-        kernel = kernel.view(B, ksize, ksize, *zk.shape[2:]).squeeze()
+        kernel = kernel.view(B, ksize, ksize, *inp.shape[2:]).squeeze()
 
         return x, kernel
 
@@ -89,24 +101,25 @@ class NoiseModel(nn.Module):
 
         nc, nf, nb = opt["nc"], opt["nf"], opt["nb"]
 
-        spatial = opt["spatial"]
-        if spatial:
+        if opt["spatial"]:
             head_k = opt["head_k"]
             body_k = opt["body_k"]
         else:
             head_k = body_k = 1
-
-        self.head1 = nn.Conv2d(1, nf, head_k, 1, head_k//2)
-        self.head2 = nn.Conv2d(nc, nf, 1, 1, 0)
+        
+        if opt["mix"]:
+            in_nc = 3 + nc
+        else:
+            in_nc = nc
 
         deg_noise = [
-            nn.Conv2d(nc + 1, nf, head_k, 1, head_k//2),
+            nn.Conv2d(in_nc, nf, head_k, 1, head_k//2),
             nn.BatchNorm2d(nf), nn.ReLU(True),
             *[
                 ResBlock(nf=nf, ksize=body_k)
                 for _ in range(nb)
                 ],
-            nn.Conv2d(nf, 1, 1, 1, 0),
+            nn.Conv2d(nf, opt["dim"], 1, 1, 0),
         ]
         self.deg_noise = nn.Sequential(*deg_noise)
 
@@ -117,27 +130,24 @@ class NoiseModel(nn.Module):
             nn.init.normal_(self.deg_noise[-1].weight, 0.001)
             nn.init.constant_(self.deg_noise[-1].bias, 0)
     
-    def forward(self, inp):
-        B, C, H, W = inp.shape
+    def forward(self, x):
+        B, C, H, W = x.shape
+
+        if self.opt["nc"] > 0:     
+            if self.opt["spatial"]:
+                zn = torch.randn(x.shape[0], self.opt["nc"], 1, 1).to(x.device)
+            else:
+                zn = torch.randn(x.shape[0], self.opt["nc"], H, W).to(x.device)
         
-        if self.opt["dim"] == 1:
-            x = rgb_to_grayscale(inp.detach())
+        if self.opt["mix"]:
+            if self.opt["nc"] > 0:
+                inp = torch.cat([x, zn], 1)
+            else:
+                inp = x
         else:
-            x = inp.detach().view(B*C, 1, H, W)
-        
-        if self.opt["spatial"]:
-            zn = torch.randn(x.shape[0], self.opt["nc"], 1, 1).to(x.device)
-        else:
-            zn = torch.randn(x.shape[0], self.opt["nc"], H, W).to(x.device)
-        
-        noise_std = self.deg_noise(torch.cat([x, zn], 1))
-        noise = noise_std ** 2 * torch.randn_like(noise_std).to(noise_std.device)
-        
-        if self.opt["dim"] != 1:
-        #     x = inp + noise
-        # else:
-            noise = noise.view(B, -1, H, W)
-            # x = inp + noise
+            inp = zn
+            
+        noise = self.deg_noise(inp)
 
         return noise
 
@@ -176,8 +186,7 @@ class DegModel(nn.Module):
 
         # noise
         if self.noise_opt is not None:
-            inp_n = F.interpolate(inp, scale_factor=1/self.scale, mode="bicubic", align_corners=False)
-            noise = self.deg_noise(inp_n)
+            noise = self.deg_noise(x.detach())
             x = x + noise
         else:
             noise = None
