@@ -1,5 +1,5 @@
 #### general settings
-name: BSRGAN
+name: 2020Track2
 use_tb_logger: false
 model: SRModel
 scale: 4
@@ -8,31 +8,7 @@ gpu_ids: [5]
 metrics: [niqe, piqe, brisque] 
 
 datasets:
-  # test1:
-  #   name: 2017Track1
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
-  # test2:
-  #   name: 2018Track2
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
-  # test3:
-  #   name: 2018Track3
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/valid_difficult.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  # test4:
-  #   name: 2018Track4
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/valid.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
-  test5:
+  test1:
     name: 2020Track2
     mode: SingleDataset
     data_type: lmdb
@@ -41,14 +17,9 @@ datasets:
 #### network structures
 networks:
   netSR:
-    which_network: RRDBNet
+    which_network: BicuBic
     setting:
-      in_nc: 3
-      out_nc: 3
-      nf: 64
-      nb: 23
-      gc: 32
       upscale: 4
     pretrain: 
-      path: ../../../checkpoints/BSRGAN/BSRGAN.pth
+      path: ~
       strict_load: true

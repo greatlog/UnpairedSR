@@ -1,10 +1,10 @@
 #### general settings
-name: 2018Track4
+name: 2017Track2
 use_tb_logger: false
 model: DegSRModel
 scale: 4
-gpu_ids: [6]
-metrics: [best_psnr, best_ssim, lpips]
+gpu_ids: [0]
+metrics: [psnr, ssim, lpips]
 
 #### datasets
 datasets:
@@ -13,13 +13,13 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [50, 200]
+    ratios: [200, 200]
 
-    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/x4.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
-    workers_per_gpu: 6  # per GPU
+    workers_per_gpu: 4  # per GPU
     imgs_per_gpu: 32
     tgt_size: 128
     src_size: 32
@@ -27,12 +27,12 @@ datasets:
     use_rot: true
 
   val:
-    name: 2018Track2
+    name: 2017Track2_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/valid_mini.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
     dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -45,8 +45,7 @@ networks:
       scale: 0.25
       zero_tail: true
     pretrain: 
-      # path: ~
-      path: log/2018Track4_deg/models/200000_netDeg.pth
+      path: log/2017Track2_deg/models/200000_netDeg.pth
       strict_load: true
 
   netSR:
@@ -57,13 +56,12 @@ networks:
       res_scale: 1
       upscale: 4
     pretrain: 
-      # path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
-      path: log/2018Track4/models/15000_netSR.pth
+      path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
       strict_load: true
-
+  
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: log/2018Track4/training_state/15000.state
+  resume_state: ~
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
@@ -78,20 +76,11 @@ train:
   val_freq: !!float 5e3
 
   losses:
-    
     sr_pix_sr: 
       type: L1Loss
       weight: 1.0
 
   optimizers:
-    # netDeg:
-    #   optim:
-    #     type: Adam
-    #     lr: !!float 2e-4
-    #   scheduler:
-    #     type: MultiStepLR
-    #     milestones: [50000, 100000, 150000]
-    #     gamma: 0.5
     netSR:
       optim:
         type: Adam
@@ -100,16 +89,9 @@ train:
         type: MultiStepLR
         milestones: [50000, 100000, 150000]
         gamma: 0.5
-    # netD1:
-    #   optim:
-    #     type: Adam
-    #     lr: !!float 2e-4
-    #   scheduler:
-    #     type: MultiStepLR
-    #     milestones: [50000, 100000, 150000]
-    #     gamma: 0.5
 
 #### logger
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
+  

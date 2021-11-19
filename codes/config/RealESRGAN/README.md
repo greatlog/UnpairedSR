@@ -1,9 +1,1 @@
-##Description:
-noise and kernel are signal-independant
-add BN layers
-the kernels are 1x1
-
-##Results:
-succeed to deblur
-Fail to denoise
-
+This repo currently only supports the test of [Real-ESRGAN](https://arxiv.org/abs/2107.10833). The training related codes may be added in the future. 

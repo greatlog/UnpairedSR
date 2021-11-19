@@ -1,0 +1,1 @@
+This repo supports the training and testing of CinGAN in the paper [Unsupervised Image Super-Resolution using Cycle-in-Cycle Generative Adversarial Networks](https://arxiv.org/abs/1809.00437)

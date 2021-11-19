@@ -1,7 +1,7 @@
 #### general settings
 name: 2020Track1
 use_tb_logger: false
-model: CGGANModel
+model: DegSRModel
 scale: 4
 gpu_ids: [1]
 metrics: [psnr, ssim, lpips]
@@ -37,7 +37,7 @@ datasets:
 
 #### network structures
 networks:
-  netG1:
+  netDeg:
     which_network: DegModel
     setting:
       scale: 4

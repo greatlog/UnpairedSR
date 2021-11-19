@@ -1,18 +1,18 @@
 #### general settings
-name: 2018Track4_psnr
+name: 2017Track2_psnr
 use_tb_logger: false
 model: DegSRModel
 scale: 4
-gpu_ids: [5]
+gpu_ids: [0]
 
-metrics: [best_psnr, best_ssim, lpips, niqe, piqe, brisque] 
+metrics: [psnr, ssim, lpips, niqe, piqe, brisque] 
 
 datasets:
   test1:
-    name: 2018Track4
+    name: 2017Track2
     mode: PairedDataset
     data_type: lmdb
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/valid.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
     dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
 
 #### network structures
@@ -25,7 +25,7 @@ networks:
       nb: 8
       zero_tail: true
     pretrain: 
-      path: log/2018Track4/models/latest_netG1.pth
+      path: log/2017Track2/models/latest_netG1.pth
       strict_load: true
 
   netSR:
@@ -36,5 +36,5 @@ networks:
       res_scale: 1
       upscale: 4
     pretrain: 
-      path: log/2018Track4/models/latest_netSR.pth
+      path: log/2017Track2/models/latest_netSR.pth
       strict_load: true

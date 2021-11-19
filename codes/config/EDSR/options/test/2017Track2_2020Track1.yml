@@ -1,7 +1,7 @@
 #### general settings
-name: 2020Track1_psnr
+name: Bicubic_2017Track2_2020Track1
 use_tb_logger: false
-model: DegSRModel
+model: SRModel
 scale: 4
 gpu_ids: [5]
 
@@ -9,6 +9,12 @@ metrics: [psnr, ssim, lpips, niqe, piqe, brisque]
 
 datasets:
   test1:
+    name: 2017Track1
+    mode: PairedDataset
+    data_type: lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
+  test5:
     name: 2020Track1
     mode: PairedDataset
     data_type: lmdb
@@ -17,24 +23,13 @@ datasets:
 
 #### network structures
 networks:
-  netG1:
-    which_network: DegModel
-    setting:
-      scale: 4
-      nf: 64
-      nb: 8
-      zero_tail: true
-    pretrain: 
-      path: log/2020Track1/models/latest_netG1.pth
-      strict_load: true
-
   netSR:
     which_network: EDSR
     setting:
-      nf: 64
       nb: 16
+      nf: 64
       res_scale: 1
       upscale: 4
     pretrain: 
-      path: log/2020Track1/models/latest_netSR.pth
+      path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
       strict_load: true

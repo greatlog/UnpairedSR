@@ -1,9 +1,9 @@
 #### general settings
-name: 2020Track1_deg
+name: 2017Track2_deg
 use_tb_logger: false
 model: DegSRModel
 scale: 4
-gpu_ids: [2]
+gpu_ids: [5]
 metrics: [psnr, ssim, lpips]
 
 #### datasets
@@ -13,13 +13,13 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [50, 200]
+    ratios: [200, 200]
 
-    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/train_source.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
-    workers_per_gpu: 6  # per GPU
+    workers_per_gpu: 4  # per GPU
     imgs_per_gpu: 32
     tgt_size: 128
     src_size: 32
@@ -27,12 +27,12 @@ datasets:
     use_rot: true
 
   val:
-    name: 2020Track1
+    name: 2017Track2_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
     dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -45,11 +45,10 @@ networks:
       scale: 0.25
       zero_tail: true
     pretrain: 
-      # path: ~
-      path: log/2020Track1/models/50000_netDeg.pth
+      path: log/2017Track1/models/195000_netDeg.pth
       strict_load: true
 
-  netSR:
+  netSr:
     which_network: EDSR
     setting:
       nf: 64
@@ -68,13 +67,12 @@ networks:
       nb: 3
       stride: 1
     pretrain: 
-      # path: ~
-      path: log/2020Track1/models/50000_netD1.pth
+      path: ~
       strict_load: true
   
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: log/2020Track1/training_state/50000.state
+  resume_state: ~
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
@@ -121,7 +119,7 @@ train:
         type: MultiStepLR
         milestones: [50000, 100000, 150000]
         gamma: 0.5
-    netSR:
+    netSr:
       optim:
         type: Adam
         lr: !!float 2e-4
@@ -149,3 +147,4 @@ train:
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
+  

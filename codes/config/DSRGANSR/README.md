@@ -1,9 +1,1 @@
-##Description:
-noise and kernel are signal-independant
-add BN layers
-the kernels are 1x1
-
-##Results:
-succeed to deblur
-Fail to denoise
-
+This repo supports the training of the degradation model DSGAN proposed in [Frequency Separation for Real-World Super-Resolution](https://arxiv.org/abs/1911.07850)

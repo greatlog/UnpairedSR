@@ -1,10 +1,10 @@
 #### general settings
-name: 2018Track2
+name: 2017Track2
 use_tb_logger: false
 model: DegSRModel
 scale: 4
-gpu_ids: [3]
-metrics: [best_psnr, best_ssim, lpips]
+gpu_ids: [0]
+metrics: [psnr, ssim, lpips]
 
 #### datasets
 datasets:
@@ -16,10 +16,10 @@ datasets:
     ratios: [200, 200]
 
     dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/x4_half.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
-    workers_per_gpu: 6  # per GPU
+    workers_per_gpu: 4  # per GPU
     imgs_per_gpu: 32
     tgt_size: 128
     src_size: 32
@@ -27,12 +27,12 @@ datasets:
     use_rot: true
 
   val:
-    name: 2018Track2
+    name: 2017Track1_mini
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid_mini.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4_mini.lmdb
     dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
@@ -69,7 +69,7 @@ networks:
     pretrain: 
       path: ~
       strict_load: true
-  
+
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~

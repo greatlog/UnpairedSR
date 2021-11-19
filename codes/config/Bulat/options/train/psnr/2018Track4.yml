@@ -1,7 +1,7 @@
 #### general settings
 name: 2018Track4
 use_tb_logger: false
-model: CGGANModel
+model: DegSRModel
 scale: 4
 gpu_ids: [2]
 metrics: [best_psnr, best_ssim, lpips]
@@ -13,10 +13,10 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [50, 200]
+    ratios: [200, 200]
 
-    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/x4_half.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track4/x4.lmdb
 
     use_shuffle: true
     workers_per_gpu: 6  # per GPU
@@ -37,7 +37,7 @@ datasets:
 
 #### network structures
 networks:
-  netG1:
+  netDeg:
     which_network: DegModel
     setting:
       scale: 4

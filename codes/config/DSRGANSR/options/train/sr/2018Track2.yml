@@ -37,7 +37,7 @@ datasets:
 
 #### network structures
 networks:
-  Encoder:
+  netDeg:
     which_network: Translator
     setting:
       nb: 16
@@ -45,10 +45,10 @@ networks:
       scale: 0.25
       zero_tail: true
     pretrain: 
-      path: log/2018Track2_deg/models/200000_Encoder.pth
+      path: log/2018Track2_deg/models/200000_netDeg.pth
       strict_load: true
 
-  Decoder:
+  netSR:
     which_network: EDSR
     setting:
       nf: 64
@@ -56,13 +56,12 @@ networks:
       res_scale: 1
       upscale: 4
     pretrain: 
-      # path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
-      path: log/2018Track2/models/20000_Decoder.pth
+      path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
       strict_load: true
   
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: log/2018Track2/training_state/20000.state
+  resume_state: ~
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
@@ -83,7 +82,7 @@ train:
       weight: 1.0
 
   optimizers:
-    # Encoder:
+    # netDeg:
     #   optim:
     #     type: Adam
     #     lr: !!float 2e-4
@@ -91,7 +90,7 @@ train:
     #     type: MultiStepLR
     #     milestones: [50000, 100000, 150000]
     #     gamma: 0.5
-    Decoder:
+    netSR:
       optim:
         type: Adam
         lr: !!float 2e-4

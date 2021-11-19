@@ -1,9 +1,1 @@
-##Description:
-noise and kernel are signal-independant
-add BN layers
-the kernels are 1x1
-
-##Results:
-succeed to deblur
-Fail to denoise
-
+This repo currently only supports the test of [BSRGAN](https://arxiv.org/abs/2103.14006). The training related codes may be added in the future. 

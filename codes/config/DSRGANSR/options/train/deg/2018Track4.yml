@@ -37,7 +37,7 @@ datasets:
 
 #### network structures
 networks:
-  Encoder:
+  netDeg:
     which_network: Translator
     setting:
       nb: 16
@@ -46,10 +46,10 @@ networks:
       zero_tail: true
     pretrain: 
       # path: ~
-      path: log/2018Track4/models/115000_Encoder.pth
+      path: log/2018Track4/models/115000_netDeg.pth
       strict_load: true
 
-  Decoder:
+  netSR:
     which_network: EDSR
     setting:
       nf: 64
@@ -113,7 +113,7 @@ train:
       weight: 1.0
 
   optimizers:
-    Encoder:
+    netDeg:
       optim:
         type: Adam
         lr: !!float 2e-4
@@ -121,7 +121,7 @@ train:
         type: MultiStepLR
         milestones: [50000, 100000, 150000]
         gamma: 0.5
-    Decoder:
+    netSR:
       optim:
         type: Adam
         lr: !!float 2e-4

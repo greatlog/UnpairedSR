@@ -1,0 +1,1 @@
+This repo supports the training and testing of ECCV paper [To learn image super-resolution, use a GAN to learn how to do image degradation firs](https://arxiv.org/abs/1807.11458)

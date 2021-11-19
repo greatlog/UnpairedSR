@@ -1,10 +1,10 @@
 #### general settings
-name: 2018Track2
+name: Trans2017Track2
 use_tb_logger: false
-model: DegSRModel
-scale: 4
-gpu_ids: [3]
-metrics: [best_psnr, best_ssim, lpips]
+model: TransModel
+scale: 1
+gpu_ids: [2]
+metrics: [psnr, ssim]
 
 #### datasets
 datasets:
@@ -14,49 +14,38 @@ datasets:
     data_type: lmdb
     color: RGB
     ratios: [200, 200]
-
-    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/x4_half.lmdb
+    
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/BicLR/x4_half.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/train_LR/x4_half.lmdb
 
     use_shuffle: true
-    workers_per_gpu: 6  # per GPU
+    workers_per_gpu: 8  # per GPU
     imgs_per_gpu: 32
-    tgt_size: 128
+    tgt_size: 32
     src_size: 32
     use_flip: true
     use_rot: true
 
   val:
-    name: 2018Track2
+    name: DIV2K
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid_mini.lmdb
-    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/BicLR/x4.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
 
 #### network structures
 networks:
-  netDeg:
-    which_network: DegModel
+  netG1:
+    which_network: Translator
     setting:
-      scale: 4
       nf: 64
       nb: 8
       zero_tail: true
+      scale: 1
     pretrain: 
       path: ~
-      strict_load: true
-
-  netSR:
-    which_network: EDSR
-    setting:
-      nf: 64
-      nb: 16
-      res_scale: 1
-      upscale: 4
-    pretrain: 
-      path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
       strict_load: true
 
   netD1:
@@ -66,55 +55,68 @@ networks:
       nf: 64
       nb: 3
       stride: 1
-    pretrain: 
+    pretrain:
       path: ~
       strict_load: true
-  
+
+  netG2:
+    which_network: Translator
+    setting:
+      nf: 64
+      nb: 8
+      zero_tail: true
+      scale: 1
+    pretrain:
+      path: ~
+      strict_load: true
+
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
-  D_ratio: 1
-  max_grad_norm: 50
   buffer_size: 16
-
+  max_grad_norm: 50
+  
   losses:
-    lr_adv:
+    g1d1_adv:
       type: GANLoss
       gan_type: lsgan
       real_label_val: 1.0
       fake_label_val: 0.0
       weight: !!float 1.0
     
-    lr_color:
-      type: ColorLoss
-      gauss_opt: ~
-      pool_opt:
-        ksize: 4
-      loss_type: mse
-      stride: 4
-      weight: 1.0
-    
-    sr_pix: 
+    lr_tv:
+      type: TVLoss
+      penealty: MSELoss
+      weight: 0.5
+      
+    g1_idt:
       type: L1Loss
-      weight: 1.0
+      weight: 5.0
+    
+    g1g2_cycle:
+      type: L1Loss
+      weight: 10.0
 
   optimizers:
     netG1:
       type: Adam
       lr: !!float 2e-4
-    netSR:
+      betas: [0.5, 0.999]
+    netG2:
       type: Adam
       lr: !!float 2e-4
+      betas: [0.5, 0.999]
     netD1:
       type: Adam
       lr: !!float 2e-4
-   
-  niter: 200000
+      betas: [0.5, 0.999]
+
+  niter: 100000
   warmup_iter: -1  # no warm up
 
   scheduler:
     type: MultiStepLR
-    milestones: [50000, 100000, 150000]
+    milestones: [50000]
     gamma: 0.5
 
   manual_seed: 0
@@ -124,4 +126,3 @@ train:
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
-  

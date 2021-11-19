@@ -1,47 +1,23 @@
 #### general settings
 name: 2018Track2_psnr
 use_tb_logger: false
-model: CGGANModel
+model: DegSRModel
 scale: 4
 gpu_ids: [1]
 
 metrics: [best_psnr, best_ssim, lpips, niqe, piqe, brisque] 
 
 datasets:
-  # test1:
-  #   name: 2017Track1
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2017/valid_LR/x4.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
-  test2:
+  test1:
     name: 2018Track2
     mode: PairedDataset
     data_type: lmdb
     dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid.lmdb
     dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4.lmdb
-  # test3:
-  #   name: 2018Track3
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/valid_difficult.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  # test4:
-  #   name: 2018Track4
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2018/valid_wild.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/NTIRE2018/valid_HR.lmdb
-  # test5:
-  #   name: 2020Track1
-  #   mode: PairedDataset
-  #   data_type: lmdb
-  #   dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1_valid_input.lmdb
-  #   dataroot_tgt: /home/lzx/SRDatasets/NTIRE2020/track1_valid_gt.lmdb
 
 #### network structures
 networks:
-  netG1:
+  netDeg:
     which_network: DegModel
     setting:
       scale: 4
