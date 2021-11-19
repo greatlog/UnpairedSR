@@ -3,7 +3,7 @@
   use_tb_logger: false
   model: DegSRModel
   scale: 4
-  gpu_ids: [1]
+  gpu_ids: [3]
   metrics: [psnr, ssim, lpips]
 
   #### datasets
@@ -27,7 +27,7 @@
       use_rot: true
 
     val:
-      name: 2020Track2_mini
+      name: 2020Track1_mini
       mode: PairedDataset
       data_type: lmdb
       color: RGB

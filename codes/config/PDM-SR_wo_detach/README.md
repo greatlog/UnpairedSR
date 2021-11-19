@@ -1,0 +1,1 @@
+without detach after blurring
