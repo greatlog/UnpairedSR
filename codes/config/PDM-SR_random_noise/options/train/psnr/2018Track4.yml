@@ -53,7 +53,7 @@
           ksize: 21
           zero_init: true
         noise_opt:
-          mix: true
+          mix: false
           spatial: false
           nc: 3
           nf: 64

@@ -151,10 +151,10 @@ class NoiseModel(nn.Module):
                 zn = torch.randn(x.shape[0], self.opt["nc"], H, W).to(x.device)
             else:
                 zn = torch.randn(x.shape[0], self.opt["nc"], 1, 1).to(x.device)
-                zn = zn.repeat(1, 1, H, W)
         
         if self.opt["mix"]:
             if self.opt["nc"] > 0:
+                zn = zn.repeat(1, 1, H, W)
                 inp = torch.cat([x, zn], 1)
             else:
                 inp = x
