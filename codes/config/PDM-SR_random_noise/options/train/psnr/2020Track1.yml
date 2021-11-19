@@ -111,10 +111,6 @@
         fake_label_val: 0.0
         weight: !!float 1.0
       
-      noise_mean: 
-        type: MSELoss
-        weight: !!float 100
-
     optimizers:
       netDeg:
         type: Adam
