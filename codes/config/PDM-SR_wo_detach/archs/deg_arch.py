@@ -43,11 +43,8 @@ class KernelModel(nn.Module):
         nc, nf, nb = opt["nc"], opt["nf"], opt["nb"]
         ksize = opt["ksize"]
 
-        if opt["spatial"]:
-            head_k = opt["head_k"]
-            body_k = opt["body_k"]
-        else:
-            head_k = body_k = 1
+        head_k = opt["head_k"]
+        body_k = opt["body_k"]
         
         if opt["mix"]:
             in_nc = 3 + nc
@@ -83,6 +80,8 @@ class KernelModel(nn.Module):
                 zk = torch.randn(B, self.opt["nc"], H, W).to(x.device)
             else:
                 zk = torch.randn(B, self.opt["nc"], 1, 1).to(x.device)
+                if self.opt["mix"]:
+                    zk = zk.repeat(1, 1, H, W)
         
         if self.opt["mix"]:
             if self.opt["nc"] > 0:
@@ -114,11 +113,8 @@ class NoiseModel(nn.Module):
 
         nc, nf, nb = opt["nc"], opt["nf"], opt["nb"]
 
-        if opt["spatial"]:
-            head_k = opt["head_k"]
-            body_k = opt["body_k"]
-        else:
-            head_k = body_k = 1
+        head_k = opt["head_k"]
+        body_k = opt["body_k"]
         
         if opt["mix"]:
             in_nc = 3 + nc
@@ -151,7 +147,8 @@ class NoiseModel(nn.Module):
                 zn = torch.randn(x.shape[0], self.opt["nc"], H, W).to(x.device)
             else:
                 zn = torch.randn(x.shape[0], self.opt["nc"], 1, 1).to(x.device)
-                zn = zn.repeat(1, 1, H, W)
+                if self.opt["mix"]:
+                    zn = zn.repeat(1, 1, H, W)
         
         if self.opt["mix"]:
             if self.opt["nc"] > 0:
