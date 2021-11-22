@@ -21,8 +21,8 @@ datasets:
     use_shuffle: true
     workers_per_gpu: 6  # per GPU
     imgs_per_gpu: 32
-    tgt_size: 192
-    src_size: 48
+    tgt_size: 128
+    src_size: 32
     use_flip: true
     use_rot: true
 

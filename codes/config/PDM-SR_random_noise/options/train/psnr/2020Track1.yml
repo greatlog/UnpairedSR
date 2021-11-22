@@ -1,9 +1,9 @@
   #### general settings
-  name: 2020Track1_psnr
+  name: 2020Track1_ksize11_unetdis
   use_tb_logger: false
   model: DegSRModel
   scale: 4
-  gpu_ids: [3]
+  gpu_ids: [2]
   metrics: [psnr, ssim, lpips]
 
   #### datasets
@@ -50,7 +50,7 @@
           nb: 8
           body_k: 1
           head_k: 1
-          ksize: 21
+          ksize: 11
           zero_init: true
         noise_opt:
           mix: true
@@ -67,12 +67,16 @@
         strict_load: true
       
     netD1:
-      which_network: PatchGANDiscriminator
+      # which_network: PatchGANDiscriminator
+      # setting:
+      #   in_c: 3
+      #   nf: 64
+      #   nb: 3
+      #   stride: 1
+      which_network: UNetDiscriminatorSN
       setting:
-        in_c: 3
+        nc: 3
         nf: 64
-        nb: 3
-        stride: 1
       pretrain:
         path: ~
         strict_load: true

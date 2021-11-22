@@ -50,7 +50,7 @@
           nb: 8
           body_k: 1
           head_k: 1
-          ksize: 21
+          ksize: 11
           zero_init: true
         noise_opt:
           mix: true

@@ -83,6 +83,8 @@ class KernelModel(nn.Module):
                 zk = torch.randn(B, self.opt["nc"], H, W).to(x.device)
             else:
                 zk = torch.randn(B, self.opt["nc"], 1, 1).to(x.device)
+                if self.opt["mix"]:
+                    zk = zk.repeat(1, 1, H, W)
         
         if self.opt["mix"]:
             if self.opt["nc"] > 0:
@@ -151,7 +153,8 @@ class NoiseModel(nn.Module):
                 zn = torch.randn(x.shape[0], self.opt["nc"], H, W).to(x.device)
             else:
                 zn = torch.randn(x.shape[0], self.opt["nc"], 1, 1).to(x.device)
-                zn = zn.repeat(1, 1, H, W)
+                if self.opt["mix"]:
+                    zn = zn.repeat(1, 1, H, W)
         
         if self.opt["mix"]:
             if self.opt["nc"] > 0:
