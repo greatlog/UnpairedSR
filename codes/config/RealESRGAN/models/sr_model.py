@@ -147,13 +147,64 @@ class SRModel(BaseModel):
 
         return loss
 
-    def test(self, data):
+    def test(self, data, crop_size=None):
         self.real_lr = data["src"].to(self.device)
         self.netSR.eval()
         with torch.no_grad():
-            self.fake_real_hr = self.netSR(self.real_lr)
+            if crop_size is None:
+                self.fake_real_hr = self.netSR(self.real_lr)
+            else:
+                self.fake_real_hr = self.crop_test(self.real_lr, crop_size)
         self.netSR.train()
+    
+    def crop_test(self, lr, crop_size):
+        b, c, h, w = lr.shape
+        scale = self.opt["scale"]
 
+        h_start = list(range(0, h-crop_size, crop_size))
+        w_start = list(range(0, w-crop_size, crop_size))
+
+        sr1 = torch.zeros(b, c, int(h*scale), int(w* scale), device=self.device) - 1
+        for hs in h_start:
+            for ws in w_start:
+                lr_patch = lr[:, :, hs: hs+crop_size, ws: ws+crop_size]
+                sr_patch = self.netSR(lr_patch)
+
+                sr1[:, :, 
+                    int(hs*scale):int((hs+crop_size)*scale),
+                    int(ws*scale):int((ws+crop_size)*scale)
+                ] = sr_patch
+        
+        h_end = list(range(h, crop_size, -crop_size))
+        w_end = list(range(w, crop_size, -crop_size))
+
+        sr2 = torch.zeros(b, c, int(h*scale), int(w* scale), device=self.device) - 1
+        for hd in h_end:
+            for wd in w_end:
+                lr_patch = lr[:, :, hd-crop_size:hd, wd-crop_size:wd]
+                sr_patch = self.netSR(lr_patch)
+
+                sr2[:, :, 
+                    int((hd-crop_size)*scale):int(hd*scale),
+                    int((wd-crop_size)*scale):int(wd*scale)
+                ] = sr_patch
+
+        mask1 = (
+            (sr1 == -1).float() * 0 + 
+            (sr2 == -1).float() * 1 + 
+            ((sr1 > 0) * (sr2 > 0)).float() * 0.5
+        )
+
+        mask2 = (
+            (sr1 == -1).float() * 1 + 
+            (sr2 == -1).float() * 0 + 
+            ((sr1 > 0) * (sr2 > 0)).float() * 0.5
+        )
+
+        sr = mask1 * sr1 + mask2 * sr2
+
+        return sr
+            
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
         out_dict["lr"] = self.real_lr.detach()[0].float().cpu()
