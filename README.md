@@ -1,4 +1,4 @@
-This is an offical implementation of [PDM-SR](codes/config/PDMSR/). This repo also contains the implementations of many other blind SR methods in [config](codes/config/)
+This is an offical implementation of [PDM-SR](codes/config/PDM-SR/). This repo also contains the implementations of many other blind SR methods in [config](codes/config/)
 
 ## Dependences
 1. lpips (pip install --user lpips)
