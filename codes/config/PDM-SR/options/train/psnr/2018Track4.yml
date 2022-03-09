@@ -62,7 +62,7 @@ networks:
         dim: 3
         zero_init: true
     pretrain: 
-      path: log/2018Track4_deg/models/latest_netDeg.pth
+      path: ~
       strict_load: true
 
   netSR:
@@ -104,11 +104,7 @@ train:
       type: MultiStepRestartLR
       milestones: [50000, 100000, 150000]
       gamma: 0.5
-    # netD2:
-    #   type: MultiStepRestartLR
-    #   milestones: [50000, 100000, 150000]
-    #   gamma: 0.5
-
+   
   manual_seed: 0
   val_freq: !!float 5e3
 

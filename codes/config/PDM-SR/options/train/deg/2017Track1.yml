@@ -55,7 +55,7 @@ networks:
       noise_opt: ~
     pretrain: 
       # path: ~
-      path: log/2017Track1_deg/models/70000_netDeg.pth
+      path: ~
       strict_load: true
 
   # netSR:

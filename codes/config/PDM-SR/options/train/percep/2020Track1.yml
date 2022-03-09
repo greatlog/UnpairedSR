@@ -61,31 +61,20 @@ networks:
         dim: 1
         zero_init: false
     pretrain: 
-      path: log/2020Track1_deg/models/latest_netDeg.pth
+      path: ~
       strict_load: true
 
   netSR:
-    # which_network: EDSR
-    # setting:
-    #   nf: 64
-    #   nb: 16
-    #   res_scale: 1
-    #   upscale: 4
-    # pretrain: 
-    #   path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
-    #   strict_load: true
-    which_network: RRDBNet
+    which_network: EDSR
     setting:
-      in_nc: 3
-      out_nc: 3
       nf: 64
-      nb: 23
-      gc: 32
+      nb: 16
+      res_scale: 1
       upscale: 4
     pretrain: 
-      path: ../../../checkpoints/BSRGAN/BSRGAN.pth
+      path: ~
       strict_load: true
-      
+
   netD2:
     which_network: UNetDiscriminatorSN
     setting:

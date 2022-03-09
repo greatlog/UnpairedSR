@@ -62,8 +62,7 @@ networks:
         dim: 3
         zero_init: true
     pretrain: 
-      path: log/2018Track2_deg/models/195000_netDeg.pth
-      # path: ../../../experiments/DegSpace_final_new_discriminator/2018Track2_percep_lpips_v2/models/latest_Encoder.pth
+      path: ~
       strict_load: true
 
   netSR:

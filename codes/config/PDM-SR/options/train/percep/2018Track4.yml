@@ -62,7 +62,7 @@ networks:
         dim: 3
         zero_init: true
     pretrain: 
-      path: log/2018Track4_deg/models/latest_netDeg.pth
+      path: ~
       strict_load: true
 
   netSR:
