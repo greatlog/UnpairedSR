@@ -116,33 +116,22 @@
         weight: !!float 100
 
     optimizers:
-      netDeg:
+      default:
         type: Adam
         lr: !!float 2e-4
-      netSR:
-        type: Adam
-        lr: !!float 2e-4
-      netD1:
-        type: Adam
-        lr: !!float 2e-4
+      netDeg: ~
+      netSR: ~
+      netD1: ~
     
     niter: 200000
     warmup_iter: -1  # no warm up
 
     schedulers:
-      netDeg:
+      default:
         type: MultiStepRestartLR
         milestones: [50000, 100000, 150000]
         gamma: 0.5
-      netSR:
-        type: MultiStepRestartLR
-        milestones: [50000, 100000, 150000]
-        gamma: 0.5
-      netD1:
-        type: MultiStepRestartLR
-        milestones: [50000, 100000, 150000]
-        gamma: 0.5
-
+     
     manual_seed: 0
     val_freq: !!float 5e3
 

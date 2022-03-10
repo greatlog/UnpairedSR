@@ -110,7 +110,8 @@ networks:
 
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: log/2020Track1/training_state/180000.state
+  resume_state: ~
+  max_grad_norm: 50
 
   losses:
     sr_pix:
@@ -155,38 +156,25 @@ train:
       weight: 1
 
   optimizers:
-    netSR:
+    default:
       type: Adam
-      lr: !!float 1e-4
-      betas: [0.9, 0.999]
-    netG1:
-      type: Adam
-      lr: !!float 1e-4
-      betas: [0.5, 0.999]
-    netG2:
-      type: Adam
-      lr: !!float 1e-4
-      betas: [0.5, 0.999]
-    netD1:
-      type: Adam
-      lr: !!float 1e-4
-      betas: [0.5, 0.999]
-    netD2:
-      type: Adam
-      lr: !!float 1e-4
-      betas: [0.5, 0.999]
-    netD3:
-      type: Adam
-      lr: !!float 1e-4
-      betas: [0.5, 0.999]
+        lr: !!float 1e-4
+        betas: [0.9, 0.999]
+    netSR: ~
+    netG1: ~
+    netG2: ~
+    netD1: ~
+    netD2: ~
+    netD3: ~
   
   niter: 300000
   warmup_iter: -1  # no warm up
 
-  scheduler:
-    type: MultiStepLR
-    milestones: [100000, 180000, 240000]
-    gamma: 0.5
+  schedulers:
+    default:
+      type: MultiStepLR
+      milestones: [100000, 180000, 240000]
+      gamma: 0.5
 
   manual_seed: 0
   val_freq: !!float 5e3

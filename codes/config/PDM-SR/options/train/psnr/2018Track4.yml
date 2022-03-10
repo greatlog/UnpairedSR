@@ -82,15 +82,14 @@ train:
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
-  
-  optim_sr: true
   optim_deg: false
+  optim_sr: true
   
   losses:
     sr_pix_sr: 
       type: L1Loss
       weight: 1.0
-
+    
   optimizers:
     netSR:
       type: Adam
@@ -101,10 +100,10 @@ train:
 
   schedulers:
     netSR:
-      type: MultiStepRestartLR
+      type: MultiStepLR
       milestones: [50000, 100000, 150000]
       gamma: 0.5
-   
+
   manual_seed: 0
   val_freq: !!float 5e3
 
@@ -112,4 +111,3 @@ train:
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
-  

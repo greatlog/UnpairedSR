@@ -131,7 +131,7 @@ train:
 
     sr_pix_trans: 
       type: MSELoss
-      weight: 100.0
+      weight: 1000.0
     
     sr_pix:
       type: MSELoss
@@ -180,38 +180,25 @@ train:
       weight: 10.0
 
   optimizers:
-    netSR:
+    default:
       type: Adam
-      lr: !!float 1e-4
-      betas: [0.5, 0.999]
-    netG1:
-      type: Adam
-      lr: !!float 2e-4
-      betas: [0.5, 0.999]
-    netG2:
-      type: Adam
-      lr: !!float 2e-4
-      betas: [0.5, 0.999]
-    netD1:
-      type: Adam
-      lr: !!float 2e-4
-      betas: [0.5, 0.999]
-    netD2:
-      type: Adam
-      lr: !!float 2e-4
-      betas: [0.5, 0.999]
-    # netD3:
-    #   type: Adam
-    #   lr: !!float 1e-4
-    #   betas: [0.5, 0.999]
+        lr: !!float 1e-4
+        betas: [0.5, 0.999]
+    netSR: ~
+    netG1: ~
+    netG2: ~
+    netD1: ~
+    netD2: ~
+    # netD3: ~
   
   niter: 200000
   warmup_iter: -1  # no warm up
 
-  scheduler:
-    type: MultiStepLR
-    milestones: [50000, 100000, 150000]
-    gamma: 0.5
+  schedulers:
+    default:
+      type: MultiStepLR
+      milestones: [50000, 100000, 150000]
+      gamma: 0.5
 
   manual_seed: 0
   val_freq: !!float 5e3

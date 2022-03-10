@@ -45,7 +45,7 @@ networks:
       scale: 0.25
       zero_tail: true
     pretrain: 
-      path: log/2017Track2_deg/models/200000_netDeg.pth
+      path: ~
       strict_load: true
 
   netSR:
@@ -82,13 +82,14 @@ train:
 
   optimizers:
     netSR:
-      optim:
-        type: Adam
-        lr: !!float 2e-4
-      scheduler:
-        type: MultiStepLR
-        milestones: [50000, 100000, 150000]
-        gamma: 0.5
+      type: Adam
+      lr: !!float 2e-4
+
+  schedulers:
+    default:
+      type: MultiStepLR
+      milestones: [50000, 100000, 150000]
+      gamma: 0.5
 
 #### logger
 logger:

@@ -4,7 +4,33 @@ from collections import Counter, defaultdict
 import torch
 from torch.optim.lr_scheduler import _LRScheduler
 
+from utils.registry import LR_SCHEDULER_REGISTRY
 
+
+@LR_SCHEDULER_REGISTRY.register()
+class LinearDecayLR(_LRScheduler):
+    def __init__(
+        self,
+        optimizer,
+        decay_prop,
+        total_steps,
+        last_epoch=-1,
+    ):
+        self.decay_prop = decay_prop
+        self.total_steps = total_steps
+
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+
+        return [
+            group["initial_lr"]
+            * (1 - (self.last_epoch + 1) * self.decay_prop / self.total_steps)
+            for group in self.optimizer.param_groups
+        ]
+
+
+@LR_SCHEDULER_REGISTRY.register()
 class MultiStepRestartLR(_LRScheduler):
     def __init__(
         self,
@@ -42,6 +68,7 @@ class MultiStepRestartLR(_LRScheduler):
         ]
 
 
+@LR_SCHEDULER_REGISTRY.register()
 class CosineAnnealingRestartLR(_LRScheduler):
     def __init__(
         self, optimizer, T_period, restarts=None, weights=None, eta_min=0, last_epoch=-1

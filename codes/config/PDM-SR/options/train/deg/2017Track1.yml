@@ -54,34 +54,24 @@ networks:
         zero_init: true
       noise_opt: ~
     pretrain: 
-      # path: ~
       path: ~
       strict_load: true
 
-  # netSR:
-  #   which_network: EDSR
-  #   setting:
-  #     nf: 64
-  #     nb: 16
-  #     res_scale: 1
-  #     upscale: 4
-  #   pretrain: 
-  #     path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
-  #     strict_load: true
-
   netD1:
-    which_network: UNetDiscriminatorSN
+    which_network: PatchGANDiscriminator
     setting:
-      nc: 3
+      in_c: 3
       nf: 64
+      nb: 3
+      stride: 2
     pretrain: 
-      # path: ~
-      path: log/2017Track1_deg/models/70000_netD1.pth
+      path: ~
       strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: log/2017Track1_deg/training_state/70000.state
+  resume_state: ~
+
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
@@ -107,10 +97,11 @@ train:
   niter: 200000
   warmup_iter: -1  # no warm up
 
-  scheduler:
-    type: MultiStepLR
-    milestones: [50000, 100000, 150000]
-    gamma: 0.5
+  schedulers:
+    default:
+      type: MultiStepLR
+      milestones: [50000, 100000, 150000]
+      gamma: 0.5
 
   manual_seed: 0
   val_freq: !!float 2e5

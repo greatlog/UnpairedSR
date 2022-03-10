@@ -45,8 +45,7 @@ networks:
       scale: 0.25
       zero_tail: true
     pretrain: 
-      # path: ~
-      path: log/2018Track4_deg/models/200000_netDeg.pth
+      path: ~
       strict_load: true
 
   netSR:
@@ -57,13 +56,12 @@ networks:
       res_scale: 1
       upscale: 4
     pretrain: 
-      # path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
-      path: log/2018Track4/models/15000_netSR.pth
+      path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
       strict_load: true
 
 #### training settings: learning rate scheme, loss
 train:
-  resume_state: log/2018Track4/training_state/15000.state
+  resume_state: ~
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
@@ -78,36 +76,20 @@ train:
   val_freq: !!float 5e3
 
   losses:
-    
     sr_pix_sr: 
       type: L1Loss
       weight: 1.0
 
   optimizers:
-    # netDeg:
-    #   optim:
-    #     type: Adam
-    #     lr: !!float 2e-4
-    #   scheduler:
-    #     type: MultiStepLR
-    #     milestones: [50000, 100000, 150000]
-    #     gamma: 0.5
     netSR:
-      optim:
-        type: Adam
-        lr: !!float 2e-4
-      scheduler:
-        type: MultiStepLR
-        milestones: [50000, 100000, 150000]
-        gamma: 0.5
-    # netD1:
-    #   optim:
-    #     type: Adam
-    #     lr: !!float 2e-4
-    #   scheduler:
-    #     type: MultiStepLR
-    #     milestones: [50000, 100000, 150000]
-    #     gamma: 0.5
+      type: Adam
+      lr: !!float 2e-4
+
+  schedulers:
+    default:
+      type: MultiStepLR
+      milestones: [50000, 100000, 150000]
+      gamma: 0.5
 
 #### logger
 logger:

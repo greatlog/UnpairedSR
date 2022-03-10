@@ -49,40 +49,13 @@ class CinGANModel(BaseModel):
             
         if self.is_train:
             train_opt = opt["train"]
+            # setup loss, optimizers, schedulers
+            self.setup_train(train_opt["train"])
             self.max_grad_norm = train_opt["max_grad_norm"]
 
             # buffer
             self.fake_lr_buffer = ShuffleBuffer(train_opt["buffer_size"])
             self.fake_hr_buffer = ShuffleBuffer(train_opt["buffer_size"])
-
-            # define losses
-            loss_opt = train_opt["losses"]
-            defined_loss_names = list(loss_opt.keys())
-            assert set(defined_loss_names).issubset(set(self.loss_names))
-
-            for name in defined_loss_names:
-                loss_conf = loss_opt.get(name)
-                if loss_conf["weight"] > 0:
-                    self.loss_weights[name] = loss_conf.pop("weight")
-                    self.losses[name] = self.build_loss(loss_conf)
-
-            # build optmizers
-            optimizer_opt = train_opt["optimizers"]
-            defined_optimizer_names = list(optimizer_opt.keys())
-            assert set(defined_optimizer_names).issubset(self.networks.keys())
-
-            for name in defined_optimizer_names:
-                optim_config = optimizer_opt[name]
-                self.optimizers[name] = self.build_optimizer(
-                    getattr(self, name), optim_config
-                )
-                
-            # set schedulers
-            scheduler_opt = train_opt["scheduler"]
-            self.setup_schedulers(scheduler_opt)
-
-            # set to training state
-            self.set_network_state(self.networks.keys(), "train")
 
     def feed_data(self, data):
 

@@ -45,7 +45,7 @@ networks:
       scale: 0.25
       zero_tail: true
     pretrain: 
-      path: log/2018Track2_deg/models/200000_netDeg.pth
+      path: ~
       strict_load: true
 
   netSR:
@@ -76,38 +76,23 @@ train:
   val_freq: !!float 5e3
 
   losses:
-    
     sr_pix_sr: 
       type: L1Loss
       weight: 1.0
 
   optimizers:
-    # netDeg:
-    #   optim:
-    #     type: Adam
-    #     lr: !!float 2e-4
-    #   scheduler:
-    #     type: MultiStepLR
-    #     milestones: [50000, 100000, 150000]
-    #     gamma: 0.5
     netSR:
-      optim:
-        type: Adam
-        lr: !!float 2e-4
-      scheduler:
-        type: MultiStepLR
-        milestones: [50000, 100000, 150000]
-        gamma: 0.5
-    # netD1:
-    #   optim:
-    #     type: Adam
-    #     lr: !!float 2e-4
-    #   scheduler:
-    #     type: MultiStepLR
-    #     milestones: [50000, 100000, 150000]
-    #     gamma: 0.5
+      type: Adam
+      lr: !!float 2e-4
+
+  schedulers:
+    default:
+      type: MultiStepLR
+      milestones: [50000, 100000, 150000]
+      gamma: 0.5
 
 #### logger
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
+  

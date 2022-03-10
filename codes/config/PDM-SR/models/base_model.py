@@ -9,13 +9,13 @@ from torch.nn.parallel import DataParallel, DistributedDataParallel
 from archs import build_loss, build_network, build_scheduler
 from utils.registry import MODEL_REGISTRY
 
-
 logger = logging.getLogger("base")
 
 
 @MODEL_REGISTRY.register()
 class BaseModel:
     def __init__(self, opt):
+
         self.opt = opt
 
         if opt["dist"]:
@@ -29,11 +29,26 @@ class BaseModel:
         self.log_dict = OrderedDict()
 
         self.data_names = []
-        self.network_names = []
         self.networks = {}
 
         self.optimizers = {}
         self.schedulers = {}
+
+    def setup_train(self, train_opt):
+        # define losses
+        loss_opt = train_opt["losses"]
+        self.losses = self.build_losses(loss_opt)
+
+        # build optmizers
+        optimizer_opts = train_opt["optimizers"]
+        self.optimizers = self.build_optimizers(optimizer_opts)
+
+        # set schedulers
+        scheduler_opts = train_opt["schedulers"]
+        self.schedulers = self.build_schedulers(scheduler_opts)
+
+        # set to training state
+        self.set_network_state(self.networks.keys(), "train")
 
     def feed_data(self, data):
         pass
@@ -59,36 +74,70 @@ class BaseModel:
     def build_network(self, net_opt):
 
         net = build_network(net_opt)
-        net = self.model_to_device(net)
 
-        if net_opt.get("pretrain"):
-            pretrain = net_opt.pop("pretrain")
-            self.load_network(net, pretrain["path"], pretrain["strict_load"])
+        if isinstance(net, nn.Module):
+            net = self.model_to_device(net)
 
-        self.print_network(net)
+            if net_opt.get("pretrain"):
+                pretrain = net_opt.pop("pretrain")
+                self.load_network(net, pretrain["path"], pretrain["strict_load"])
+
+            self.print_network(net)
         return net
 
-    def build_loss(self, loss_config):
-        loss = build_loss(loss_config)
-        loss = loss.to(self.device)
-        return loss
+    def build_losses(self, loss_opt):
+        losses = {}
 
-    @staticmethod
-    def build_optimizer(net, optim_config):
-        optim_params = []
-        for v in net.parameters():
-            if v.requires_grad:
-                optim_params.append(v)
-        optim_type = optim_config.pop("type")
-        optimizer = getattr(torch.optim, optim_type)(
-            params=optim_params, **optim_config
-        )
-        return optimizer
+        defined_loss_names = list(loss_opt.keys())
+        assert set(defined_loss_names).issubset(set(self.loss_names))
 
-    def setup_schedulers(self, scheduler_opt):
-        """Set up schedulers."""
-        for name, optimizer in self.optimizers.items():
-            self.schedulers[name] = build_scheduler(optimizer, scheduler_opt[name])
+        for name in defined_loss_names:
+            loss_conf = loss_opt.get(name)
+            if loss_conf["weight"] > 0:
+                self.loss_weights[name] = loss_conf.pop("weight")
+                losses[name] = build_loss(loss_conf).to(self.device)
+
+        return losses
+
+    def build_optimizers(self, optim_opts):
+        optimizers = {}
+
+        if "default" in optim_opts.keys():
+            default_optim = optim_opts.pop("default")
+
+        defined_optimizer_names = list(optim_opts.keys())
+        assert set(defined_optimizer_names).issubset(self.networks.keys())
+
+        for name in defined_optimizer_names:
+            optim_opt = optim_opts[name]
+            if optim_opt is None:
+                optim_opt = default_optim.copy()
+
+            params = []
+            for v in self.networks[name].parameters():
+                if v.requires_grad:
+                    params.append(v)
+
+            optim_type = optim_opt.pop("type")
+            optimizer = getattr(torch.optim, optim_type)(params=params, **optim_opt)
+            optimizers[name] = optimizer
+
+        return optimizers
+
+    def build_schedulers(self, scheduler_opts):
+        """Set up scheduler."""
+        schedulers = {}
+        if "default" in scheduler_opts.keys():
+            default_opt = scheduler_opts.pop("default")
+
+        for name in self.optimizers.keys():
+            scheduler_opt = scheduler_opts[name]
+            if scheduler_opt is None:
+                scheduler_opt = default_opt.copy()
+
+            schedulers[name] = build_scheduler(self.optimizers[name], scheduler_opt)
+
+        return schedulers
 
     def model_to_device(self, net):
         """Model to device. It also warps models with DistributedDataParallel
@@ -126,12 +175,14 @@ class BaseModel:
 
     def set_requires_grad(self, names, requires_grad):
         for name in names:
-            for v in self.networks[name].parameters():
-                v.requires_grad = requires_grad
+            if isinstance(self.networks[name], nn.Module):
+                for v in self.networks[name].parameters():
+                    v.requires_grad = requires_grad
 
     def set_network_state(self, names, state):
         for name in names:
-            getattr(self.networks[name], state)()
+            if isinstance(self.networks[name], nn.Module):
+                getattr(self.networks[name], state)()
 
     def clip_grad_norm(self, names, norm):
         for name in names:

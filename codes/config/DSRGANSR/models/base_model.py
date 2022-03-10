@@ -6,10 +6,8 @@ import torch
 import torch.nn as nn
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 
-from archs import build_loss, build_network
+from archs import build_loss, build_network, build_scheduler
 from utils.registry import MODEL_REGISTRY
-
-from .lr_scheduler import CosineAnnealingRestartLR, MultiStepRestartLR
 
 logger = logging.getLogger("base")
 
@@ -17,6 +15,7 @@ logger = logging.getLogger("base")
 @MODEL_REGISTRY.register()
 class BaseModel:
     def __init__(self, opt):
+
         self.opt = opt
 
         if opt["dist"]:
@@ -30,11 +29,26 @@ class BaseModel:
         self.log_dict = OrderedDict()
 
         self.data_names = []
-        self.network_names = []
         self.networks = {}
 
         self.optimizers = {}
         self.schedulers = {}
+
+    def setup_train(self, train_opt):
+        # define losses
+        loss_opt = train_opt["losses"]
+        self.losses = self.build_losses(loss_opt)
+
+        # build optmizers
+        optimizer_opts = train_opt["optimizers"]
+        self.optimizers = self.build_optimizers(optimizer_opts)
+
+        # set schedulers
+        scheduler_opts = train_opt["schedulers"]
+        self.schedulers = self.build_schedulers(scheduler_opts)
+
+        # set to training state
+        self.set_network_state(self.networks.keys(), "train")
 
     def feed_data(self, data):
         pass
@@ -60,47 +74,70 @@ class BaseModel:
     def build_network(self, net_opt):
 
         net = build_network(net_opt)
-        net = self.model_to_device(net)
 
-        if net_opt.get("pretrain"):
-            pretrain = net_opt.pop("pretrain")
-            self.load_network(net, pretrain["path"], pretrain["strict_load"])
+        if isinstance(net, nn.Module):
+            net = self.model_to_device(net)
 
-        self.print_network(net)
+            if net_opt.get("pretrain"):
+                pretrain = net_opt.pop("pretrain")
+                self.load_network(net, pretrain["path"], pretrain["strict_load"])
+
+            self.print_network(net)
         return net
 
-    def build_loss(self, loss_config):
-        loss = build_loss(loss_config)
-        loss = loss.to(self.device)
-        return loss
+    def build_losses(self, loss_opt):
+        losses = {}
 
-    @staticmethod
-    def build_optimizer(net, optim_config):
-        optim_params = []
-        for v in net.parameters():
-            if v.requires_grad:
-                optim_params.append(v)
-        optim_type = optim_config.pop("type")
-        optimizer = getattr(torch.optim, optim_type)(
-            params=optim_params, **optim_config
-        )
-        return optimizer
+        defined_loss_names = list(loss_opt.keys())
+        assert set(defined_loss_names).issubset(set(self.loss_names))
 
-    def build_scheduler(self, optimizer, scheduler_opt):
-        """Set up schedulers."""
-        scheduler_type = scheduler_opt.pop("type")
+        for name in defined_loss_names:
+            loss_conf = loss_opt.get(name)
+            if loss_conf["weight"] > 0:
+                self.loss_weights[name] = loss_conf.pop("weight")
+                losses[name] = build_loss(loss_conf).to(self.device)
 
-        if scheduler_type in ["MultiStepLR", "MultiStepRestartLR"]:
-            scheduler = MultiStepRestartLR(optimizer, **scheduler_opt)
+        return losses
 
-        elif scheduler_type == "CosineAnnealingRestartLR":
-            scheduler = CosineAnnealingRestartLR(optimizer, **scheduler_opt)
-            
-        else:
-            raise NotImplementedError(
-                f"Scheduler {scheduler_type} is not implemented yet."
-            )
-        return scheduler
+    def build_optimizers(self, optim_opts):
+        optimizers = {}
+
+        if "default" in optim_opts.keys():
+            default_optim = optim_opts.pop("default")
+
+        defined_optimizer_names = list(optim_opts.keys())
+        assert set(defined_optimizer_names).issubset(self.networks.keys())
+
+        for name in defined_optimizer_names:
+            optim_opt = optim_opts[name]
+            if optim_opt is None:
+                optim_opt = default_optim.copy()
+
+            params = []
+            for v in self.networks[name].parameters():
+                if v.requires_grad:
+                    params.append(v)
+
+            optim_type = optim_opt.pop("type")
+            optimizer = getattr(torch.optim, optim_type)(params=params, **optim_opt)
+            optimizers[name] = optimizer
+
+        return optimizers
+
+    def build_schedulers(self, scheduler_opts):
+        """Set up scheduler."""
+        schedulers = {}
+        if "default" in scheduler_opts.keys():
+            default_opt = scheduler_opts.pop("default")
+
+        for name in self.optimizers.keys():
+            scheduler_opt = scheduler_opts[name]
+            if scheduler_opt is None:
+                scheduler_opt = default_opt.copy()
+
+            schedulers[name] = build_scheduler(self.optimizers[name], scheduler_opt)
+
+        return schedulers
 
     def model_to_device(self, net):
         """Model to device. It also warps models with DistributedDataParallel
@@ -138,46 +175,46 @@ class BaseModel:
 
     def set_requires_grad(self, names, requires_grad):
         for name in names:
-            for v in self.networks[name].parameters():
-                v.requires_grad = requires_grad
+            if isinstance(self.networks[name], nn.Module):
+                for v in self.networks[name].parameters():
+                    v.requires_grad = requires_grad
 
     def set_network_state(self, names, state):
         for name in names:
-            getattr(self.networks[name], state)()
+            if isinstance(self.networks[name], nn.Module):
+                getattr(self.networks[name], state)()
 
     def clip_grad_norm(self, names, norm):
         for name in names:
             nn.utils.clip_grad_norm_(self.networks[name].parameters(), max_norm=norm)
 
-    def _set_lr(self, names, lr_groups_l):
+    def _set_lr(self, lr_groups_l):
         """set learning rate for warmup,
         lr_groups_l: list for lr_groups. each for a optimizer"""
-        for name, lr_groups in zip(names, lr_groups_l):
-            optimizer = self.optimizers[name]
+        for optimizer, lr_groups in zip(self.optimizers, lr_groups_l):
             for param_group, lr in zip(optimizer.param_groups, lr_groups):
                 param_group["lr"] = lr
 
-    def _get_init_lr(self, names):
+    def _get_init_lr(self):
         # get the initial lr, which is set by the scheduler
         init_lr_groups_l = []
-        for name in names:
-            opt = self.optimizers[name]
+        for optimizer in self.optimizers:
             init_lr_groups_l.append([v["initial_lr"] for v in optimizer.param_groups])
         return init_lr_groups_l
 
-    def update_learning_rate(self, names, cur_iter, warmup_iter=-1):
-        for name in names:
-            self.schedulers[name].step()
+    def update_learning_rate(self, cur_iter, warmup_iter=-1):
+        for _, scheduler in self.schedulers.items():
+            scheduler.step()
         #### set up warm up learning rate
         if cur_iter < warmup_iter:
             # get initial lr for each group
-            init_lr_g_l = self._get_init_lr(names)
+            init_lr_g_l = self._get_init_lr()
             # modify warming-up learning rates
             warm_up_lr_l = []
             for init_lr_g in init_lr_g_l:
                 warm_up_lr_l.append([v / warmup_iter * cur_iter for v in init_lr_g])
             # set learning rate
-            self._set_lr(names, warm_up_lr_l)
+            self._set_lr(warm_up_lr_l)
 
     def get_current_learning_rate(self):
         # return self.schedulers[0].get_lr()[0]

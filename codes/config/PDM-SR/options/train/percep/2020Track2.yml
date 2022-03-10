@@ -75,14 +75,16 @@ networks:
       strict_load: true
 
   netD2:
-    which_network: UNetDiscriminatorSN
+    which_network: PatchGANDiscriminator
     setting:
-      nc: 3
+      in_c: 3
       nf: 64
-    pretrain: 
+      nb: 3
+      stride: 1
+    pretrain:
       path: ~
       strict_load: true
-
+      
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
@@ -107,36 +109,38 @@ train:
       weight: !!float 0.05
     
     sr_percep:
-      type: PerceptualLossLPIPS
-      net: alex
-      normalize: true
-      weight: 0.05
+      type: PerceptualLoss
+      layer_weights:
+        'conv5_4': 1  # before relu
+      vgg_type: vgg19
+      use_input_norm: true
+      range_norm: false
+      perceptual_weight: 1.0
+      style_weight: 0
+      criterion: l1
+      weight: !!float 0.05
 
   optimizers:
     netSR:
       type: Adam
-      lr: !!float 1e-4
+      lr: !!float 2e-4
     netD2:
       type: Adam
-      lr: !!float 1e-4
-      
-  niter: 20000
+      lr: !!float 2e-4
+   
+  niter: 200000
   warmup_iter: -1  # no warm up
 
   schedulers:
-    netSR:
-      type: MultiStepRestartLR
-      milestones: [5000, 10000, 15000]
-      gamma: 0.5
-    netD2:
-      type: MultiStepRestartLR
-      milestones: [5000, 10000, 15000]
+    default:
+      type: MultiStepLR
+      milestones: [50000, 100000, 150000]
       gamma: 0.5
 
   manual_seed: 0
-  val_freq: !!float 2e3
+  val_freq: !!float 5e3
 
 #### logger
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 2e3
+  save_checkpoint_freq: !!float 5e3

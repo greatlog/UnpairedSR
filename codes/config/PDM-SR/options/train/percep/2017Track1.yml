@@ -69,14 +69,16 @@ networks:
       strict_load: true
   
   netD2:
-    which_network: UNetDiscriminatorSN
+    which_network: PatchGANDiscriminator
     setting:
-      nc: 3
+      in_c: 3
       nf: 64
-    pretrain: 
+      nb: 3
+      stride: 1
+    pretrain:
       path: ~
       strict_load: true
-
+      
 #### training settings: learning rate scheme, loss
 train:
   resume_state: ~
@@ -100,10 +102,16 @@ train:
       weight: !!float 0.05
     
     sr_percep:
-      type: PerceptualLossLPIPS
-      net: alex
-      normalize: true
-      weight: 0.05
+      type: PerceptualLoss
+      layer_weights:
+        'conv5_4': 1  # before relu
+      vgg_type: vgg19
+      use_input_norm: true
+      range_norm: false
+      perceptual_weight: 1.0
+      style_weight: 0
+      criterion: l1
+      weight: !!float 0.05
 
   optimizers:
     netSR:
@@ -116,10 +124,11 @@ train:
   niter: 200000
   warmup_iter: -1  # no warm up
 
-  scheduler:
-    type: MultiStepLR
-    milestones: [50000, 100000, 150000]
-    gamma: 0.5
+  schedulers:
+    default:
+      type: MultiStepLR
+      milestones: [50000, 100000, 150000]
+      gamma: 0.5
 
   manual_seed: 0
   val_freq: !!float 5e3
