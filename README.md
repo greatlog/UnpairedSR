@@ -1,4 +1,16 @@
-This is an offical implementation of [PDM-SR](codes/config/PDM-SR/). This repo also contains the implementations of many other blind SR methods in [config](codes/config/)
+This is an offical implementation of the CVPR2022's paper [Learning the Degradation Distribution for Blind Image Super-Resolution](https://arxiv.org/abs/2203.04962). This repo also contains the implementations of many other blind SR methods in [config](codes/config/)
+
+If you find this repo useful for your work, please cite our paper:
+```
+@inproceedings{PDMSR,
+  title={Learning the Degradation Distribution for Blind Image Super-Resolution},
+  author={Zhengxiong Luo and Yan Huang and and Shang Li and Liang Wang and Tieniu Tan},
+  booktitle={CVPR},
+  year={2022}
+}
+```
+
+The codes are built on the basis of [BasicSR](https://github.com/xinntao/BasicSR).
 
 ## Dependences
 1. lpips (pip install --user lpips)
