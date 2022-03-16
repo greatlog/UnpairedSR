@@ -6,8 +6,13 @@ result
 log/
 log
 
+data_samples/
+checkpoints/
+
 *.pkl
 *.pt
 *.pth
+*.jpg
+*.png
 *.state
 *.event
