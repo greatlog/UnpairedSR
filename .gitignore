@@ -5,14 +5,9 @@ result/
 result
 log/
 log
-checkpoints/
-
-data_samples/
 
 *.pkl
 *.pt
 *.pth
-*.jpg
-*.png
 *.state
 *.event

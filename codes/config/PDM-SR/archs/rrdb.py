@@ -35,14 +35,14 @@ class RRDB(nn.Module):
 
     def __init__(self, nf, gc=32):
         super(RRDB, self).__init__()
-        self.RDB1 = ResidualDenseBlock_5C(nf, gc)
-        self.RDB2 = ResidualDenseBlock_5C(nf, gc)
-        self.RDB3 = ResidualDenseBlock_5C(nf, gc)
+        self.rdb1 = ResidualDenseBlock_5C(nf, gc)
+        self.rdb2 = ResidualDenseBlock_5C(nf, gc)
+        self.rdb3 = ResidualDenseBlock_5C(nf, gc)
 
     def forward(self, x):
-        out = self.RDB1(x)
-        out = self.RDB2(out)
-        out = self.RDB3(out)
+        out = self.rdb1(x)
+        out = self.rdb2(out)
+        out = self.rdb3(out)
         return out * 0.2 + x
 
 
@@ -50,47 +50,6 @@ class RRDB(nn.Module):
 class RRDBNet(nn.Module):
     def __init__(self, in_nc, out_nc, nf, nb, gc=32, upscale=4):
         super(RRDBNet, self).__init__()
-        self.upscale = upscale
-        RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
-
-        self.conv_first = nn.Conv2d(in_nc, nf, 3, 1, 1, bias=True)
-        self.RRDB_trunk = make_layer(RRDB_block_f, nb)
-        self.trunk_conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
-        #### upsampling
-        self.upconv1 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
-        if upscale == 4:
-            self.upconv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
-        self.HRconv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
-        self.conv_last = nn.Conv2d(nf, out_nc, 3, 1, 1, bias=True)
-
-        self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
-
-    def forward(self, x):
-        fea = self.conv_first(x)
-        trunk = self.trunk_conv(self.RRDB_trunk(fea))
-        fea = fea + trunk
-
-        if self.upscale == 2 or self.upscale == 3:
-            fea = self.lrelu(
-                self.upconv1(
-                    F.interpolate(fea, scale_factor=self.upscale, mode="nearest")
-                )
-            )
-        if self.upscale == 4:
-            fea = self.lrelu(
-                self.upconv1(F.interpolate(fea, scale_factor=2, mode="nearest"))
-            )
-            fea = self.lrelu(
-                self.upconv2(F.interpolate(fea, scale_factor=2, mode="nearest"))
-            )
-        out = self.conv_last(self.lrelu(self.HRconv(fea)))
-
-        return out
-
-@ARCH_REGISTRY.register()
-class RRDBNetNew(nn.Module):
-    def __init__(self, in_nc, out_nc, nf, nb, gc=32, upscale=4):
-        super().__init__()
         self.upscale = upscale
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
 

@@ -82,6 +82,7 @@ train:
   D_ratio: 1
   max_grad_norm: 50
   buffer_size: 0
+  
   optim_deg: false
   optim_sr: true
   

@@ -35,7 +35,7 @@ parser.add_argument(
     help="Path to options YMAL file.",
 )
 parser.add_argument("-input_dir", type=str, default="../../../data_samples/LR")
-parser.add_argument("-output_dir", type=str, default="../../../data_samples/BSRGAN")
+parser.add_argument("-output_dir", type=str, default="../../../data_samples/PDM-SR/")
 args = parser.parse_args()
 opt = option.parse(args.opt, is_train=False)
 

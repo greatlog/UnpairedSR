@@ -257,17 +257,17 @@ class DegSRModel(BaseModel):
 
         return loss_real
 
-    def test(self, test_data):
+    def test(self, test_data, crop_size=None):
         self.src = test_data["src"].to(self.device)
         if test_data.get("tgt") is not None:
-            tgt = test_data["tgt"].to(self.device)
-            b, c, h, w = tgt.shape
-            crop_h = h // 8 * 8; crop_w = w // 8 * 8
-            self.tgt = tgt[:, :, :crop_h, :crop_w]
+            self.tgt = test_data["tgt"].to(self.device)
         self.set_network_state(["netDeg", "netSR"], "eval")
         with torch.no_grad():
-            self.fake_tgt = self.netSR(self.src)
-            if test_data.get("tgt") is not None:
+            if crop_size is None:
+                self.fake_tgt = self.netSR(self.src)
+            else:
+                self.fake_tgt = self.crop_test(self.src, crop_size)
+            if hasattr(self, "netDeg") and hasattr(self, "tgt"):
                 self.fake_lr = self.netDeg(self.tgt)[0]
         self.set_network_state(["netDeg", "netSR"], "train")
 
@@ -278,6 +278,54 @@ class DegSRModel(BaseModel):
         if hasattr(self, "fake_lr"):
             out_dict["fake_lr"] = self.fake_lr.detach()[0].float().cpu()
         return out_dict
+    
+    def crop_test(self, lr, crop_size):
+        b, c, h, w = lr.shape
+        scale = self.opt["scale"]
+
+        h_start = list(range(0, h-crop_size, crop_size))
+        w_start = list(range(0, w-crop_size, crop_size))
+
+        sr1 = torch.zeros(b, c, int(h*scale), int(w* scale), device=self.device) - 1
+        for hs in h_start:
+            for ws in w_start:
+                lr_patch = lr[:, :, hs: hs+crop_size, ws: ws+crop_size]
+                sr_patch = self.netSR(lr_patch)
+
+                sr1[:, :, 
+                    int(hs*scale):int((hs+crop_size)*scale),
+                    int(ws*scale):int((ws+crop_size)*scale)
+                ] = sr_patch
+        
+        h_end = list(range(h, crop_size, -crop_size))
+        w_end = list(range(w, crop_size, -crop_size))
+
+        sr2 = torch.zeros(b, c, int(h*scale), int(w* scale), device=self.device) - 1
+        for hd in h_end:
+            for wd in w_end:
+                lr_patch = lr[:, :, hd-crop_size:hd, wd-crop_size:wd]
+                sr_patch = self.netSR(lr_patch)
+
+                sr2[:, :, 
+                    int((hd-crop_size)*scale):int(hd*scale),
+                    int((wd-crop_size)*scale):int(wd*scale)
+                ] = sr_patch
+
+        mask1 = (
+            (sr1 == -1).float() * 0 + 
+            (sr2 == -1).float() * 1 + 
+            ((sr1 > 0) * (sr2 > 0)).float() * 0.5
+        )
+
+        mask2 = (
+            (sr1 == -1).float() * 1 + 
+            (sr2 == -1).float() * 0 + 
+            ((sr1 > 0) * (sr2 > 0)).float() * 0.5
+        )
+
+        sr = mask1 * sr1 + mask2 * sr2
+
+        return sr
 
 
 class ShuffleBuffer():
