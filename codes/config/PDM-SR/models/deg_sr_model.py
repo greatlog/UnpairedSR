@@ -261,15 +261,21 @@ class DegSRModel(BaseModel):
         self.src = test_data["src"].to(self.device)
         if test_data.get("tgt") is not None:
             self.tgt = test_data["tgt"].to(self.device)
-        self.set_network_state(["netDeg", "netSR"], "eval")
+            
+        self.set_network_state(["netSR"], "eval")
         with torch.no_grad():
             if crop_size is None:
                 self.fake_tgt = self.netSR(self.src)
             else:
                 self.fake_tgt = self.crop_test(self.src, crop_size)
-            if hasattr(self, "netDeg") and hasattr(self, "tgt"):
-                self.fake_lr = self.netDeg(self.tgt)[0]
-        self.set_network_state(["netDeg", "netSR"], "train")
+        self.set_network_state(["netSR"], "train")
+
+        if hasattr(self, "netDeg"):
+            self.set_network_state(["netDeg"], "eval")
+            if hasattr(self, "tgt"):
+                with torch.no_grad():
+                    self.fake_lr = self.netDeg(self.tgt)[0]
+            self.set_network_state(["netDeg"], "train")
 
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
