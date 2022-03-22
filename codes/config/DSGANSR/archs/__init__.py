@@ -2,7 +2,7 @@ import importlib
 import os
 import os.path as osp
 
-from utils.registry import ARCH_REGISTRY, LOSS_REGISTRY
+from utils.registry import ARCH_REGISTRY, LOSS_REGISTRY, LR_SCHEDULER_REGISTRY
 
 arch_folder = osp.dirname(osp.abspath(__file__))
 arch_filenames = [
@@ -26,3 +26,8 @@ def build_loss(loss_opt):
     loss_type = loss_opt.pop("type")
     loss = LOSS_REGISTRY.get(loss_type)(**loss_opt)
     return loss
+
+def build_scheduler(optimizer, scheduler_opt):
+    scheduler_type = scheduler_opt.pop("type")
+    scheduler = LR_SCHEDULER_REGISTRY.get(scheduler_type)(optimizer, **scheduler_opt)
+    return scheduler

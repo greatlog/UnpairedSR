@@ -1,10 +1,10 @@
 #### general settings
-name: 2018Track2
+name: 2020Track1
 use_tb_logger: false
 model: DegSRModel
 scale: 4
-gpu_ids: [0]
-metrics: [best_psnr, best_ssim, lpips]
+gpu_ids: [7]
+metrics: [psnr, ssim, lpips]
 
 #### datasets
 datasets:
@@ -13,10 +13,10 @@ datasets:
     mode: UnPairedDataset
     data_type: lmdb
     color: RGB
-    ratios: [200, 200]
+    ratios: [50, 200]
 
-    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4_half.lmdb
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/x4_half.lmdb
+    dataroot_tgt: /home/lzx/SRDatasets/DIV2K_train/HR/x4.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/train_source.lmdb
 
     use_shuffle: true
     workers_per_gpu: 6  # per GPU
@@ -27,17 +27,17 @@ datasets:
     use_rot: true
 
   val:
-    name: 2018Track2
+    name: 2020Track1
     mode: PairedDataset
     data_type: lmdb
     color: RGB
 
-    dataroot_src: /home/lzx/SRDatasets/NTIRE2018/track2/valid_mini.lmdb
+    dataroot_src: /home/lzx/SRDatasets/NTIRE2020/track1/valid_mini.lmdb
     dataroot_tgt: /home/lzx/SRDatasets/DIV2K_valid/HR/x4_mini.lmdb
 
 #### network structures
 networks:
-  netDeg:
+  Encoder:
     which_network: Translator
     setting:
       nb: 16
@@ -48,7 +48,7 @@ networks:
       path: ~
       strict_load: true
 
-  netSR:
+  Decoder:
     which_network: EDSR
     setting:
       nf: 64
@@ -87,7 +87,7 @@ train:
 
   schedulers:
     default:
-      type: MultiStepLR
+      type: MultiStepRestartLR
       milestones: [50000, 100000, 150000]
       gamma: 0.5
 
@@ -95,4 +95,3 @@ train:
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
-  

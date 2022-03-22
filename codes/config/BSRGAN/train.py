@@ -178,7 +178,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             tofile=True,
         )
 
-    measure = IQA(metrics=opt["metrics"], lpips_type="alex", cuda=True)
+    measure = IQA(metrics=opt["metrics"], cuda=True)
 
     # config loggers. Before it, the log will not work
     util.setup_logger(
@@ -249,7 +249,10 @@ def main_worker(gpu, ngpus_per_node, opt, args):
 
             model.feed_data(train_data)
             model.optimize_parameters(current_step)
-            
+            model.update_learning_rate(
+                current_step, warmup_iter=opt["train"]["warmup_iter"]
+            )
+
             iter_time = time.time() - iter_time
             avg_iter_time = (avg_iter_time * (count - 1) + iter_time) / count
 
@@ -344,11 +347,12 @@ def validate(model, dataset, dist_loader, opt, measure, epoch, current_step):
         )
         util.save_img(sr_img, save_img_path)
 
-        fake_lr_img = util.tensor2img(visuals["fake_lr"])
-        save_img_path = os.path.join(
-            img_dir, f"fake_lr_{current_step:d}.png"
-        )
-        util.save_img(fake_lr_img, save_img_path)
+        if "fake_lr" in visuals.keys():
+            fake_lr_img = util.tensor2img(visuals["fake_lr"])
+            save_img_path = os.path.join(
+                img_dir, f"fake_lr_{current_step:d}.png"
+            )
+            util.save_img(fake_lr_img, save_img_path)
 
         # calculate scores
         crop_size = opt["scale"]
@@ -388,8 +392,8 @@ def validate(model, dataset, dist_loader, opt, measure, epoch, current_step):
         logger_val = logging.getLogger("val")  # validation logger
         logger_val.info(message)
     
-    # del test_results
-    # torch.cuda.empty_cache()
+    del test_results
+    torch.cuda.empty_cache()
     return avg_results
 
 

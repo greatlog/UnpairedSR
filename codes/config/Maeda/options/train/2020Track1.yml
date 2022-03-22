@@ -172,7 +172,7 @@ train:
 
   schedulers:
     default:
-      type: MultiStepLR
+      type: MultiStepRestartLR
       milestones: [100000, 180000, 240000]
       gamma: 0.5
 

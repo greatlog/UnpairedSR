@@ -178,7 +178,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             tofile=True,
         )
 
-    measure = IQA(metrics=opt["metrics"], lpips_type="alex", cuda=True)
+    measure = IQA(metrics=opt["metrics"], cuda=True)
 
     # config loggers. Before it, the log will not work
     util.setup_logger(
@@ -318,7 +318,7 @@ def validate(model, dataset, dist_loader, opt, measure, epoch, current_step):
         rank = 0
 
     if rank == 0:
-        pbar = tqdm(total=len(dataset))
+        pbar = tqdm(total=len(dataset), leave=False, dynamic_ncols=True)
 
     indices = list(range(rank, len(dataset), world_size))
     for (
@@ -346,6 +346,13 @@ def validate(model, dataset, dist_loader, opt, measure, epoch, current_step):
             img_dir, "{:s}_{:d}.png".format(img_name, current_step)
         )
         util.save_img(sr_img, save_img_path)
+
+        if "fake_lr" in visuals.keys():
+            fake_lr_img = util.tensor2img(visuals["fake_lr"])
+            save_img_path = os.path.join(
+                img_dir, f"fake_lr_{current_step:d}.png"
+            )
+            util.save_img(fake_lr_img, save_img_path)
 
         # calculate scores
         crop_size = opt["scale"]

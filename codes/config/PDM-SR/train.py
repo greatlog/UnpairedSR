@@ -178,7 +178,7 @@ def main_worker(gpu, ngpus_per_node, opt, args):
             tofile=True,
         )
 
-    measure = IQA(metrics=opt["metrics"], lpips_type="alex", cuda=True)
+    measure = IQA(metrics=opt["metrics"], cuda=True)
 
     # config loggers. Before it, the log will not work
     util.setup_logger(
