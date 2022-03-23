@@ -73,6 +73,17 @@ networks:
     pretrain: 
       path: ../../../checkpoints/EDSR/edsr_baseline_x4-new.pt
       strict_load: true
+  
+  netD1:
+    which_network: PatchGANDiscriminator
+    setting:
+      in_c: 3
+      nf: 64
+      nb: 3
+      stride: 1
+    pretrain: 
+      path: ~
+      strict_load: true
 
   netD2:
     which_network: PatchGANDiscriminator
@@ -92,13 +103,17 @@ train:
   max_grad_norm: 50
   buffer_size: 0
 
-  optim_deg: false
+  optim_deg: true
   optim_sr: true
   
   losses:
 
     sr_pix_sr: 
       type: L1Loss
+      weight: 1.0
+    
+    noise_mean:
+      type: MSELoss
       weight: 1.0
     
     sr_adv:
@@ -121,13 +136,13 @@ train:
       weight: !!float 0.05
 
   optimizers:
-    netSR:
+    default:
       type: Adam
       lr: !!float 2e-4
-    netD2:
-      type: Adam
-      lr: !!float 2e-4
-   
+    netSR: ~
+    netD2: ~
+    netD1: ~
+
   niter: 200000
   warmup_iter: -1  # no warm up
 
