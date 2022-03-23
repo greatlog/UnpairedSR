@@ -20,7 +20,7 @@ The codes are built on the basis of [BasicSR](https://github.com/xinntao/BasicSR
 The datasets in NTIRE2017 and NTIRE2018 can be downloaded from [here](https://data.vision.ee.ethz.ch/cvl/DIV2K/). The datasets in NTIRE2020 can be downloaded from the [competition site](https://competitions.codalab.org/competitions/22220).
 
 ## Start up
-We provide the [checkpoints](https://pan.baidu.com/s/1BcYcX0yCS-3-6XqT4BgYAQ?pwd=ovmw)(password: ovmw) trained for the track2 of NTIRE2020. To get a quick start:
+We provide the checkpoints in in [Google drive](https://drive.google.com/drive/folders/1bVMGaGF7yLyQhM0xmRVMD2SolOtgLvxO?usp=sharing) and [BaiduYun](https://pan.baidu.com/s/1BcYcX0yCS-3-6XqT4BgYAQ?pwd=ovmw)(password: ovmw). Please download the them into the [checkpoints](checkpoints/) directoty. To get a quick start:
 
 ```bash
 cd codes/config/PDM-SR/
