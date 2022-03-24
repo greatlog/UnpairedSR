@@ -1,4 +1,4 @@
-This is an offical implementation of the CVPR2022's paper [Learning the Degradation Distribution for Blind Image Super-Resolution](https://arxiv.org/abs/2203.04962). This repo also contains the implementations of many other blind SR methods in [config](codes/config/), including CinGAN, CycleSR, DSRGAN-SR, etc.
+This is an offical implementation of the CVPR2022's paper [Learning the Degradation Distribution for Blind Image Super-Resolution](https://arxiv.org/abs/2203.04962). This repo also contains the implementations of many other blind SR methods in [config](codes/config/), including CinGAN, CycleSR, DSGAN-SR, etc.
 
 If you find this repo useful for your work, please cite our paper:
 ```
