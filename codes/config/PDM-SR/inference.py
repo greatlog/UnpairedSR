@@ -54,7 +54,7 @@ for inx, path in tqdm(enumerate(test_files)):
     img = img.transpose(2, 0, 1)[None] / 255
     img_t = torch.as_tensor(np.ascontiguousarray(img)).float()
 
-    model.test({"src": img_t}, crop_size=512)
+    model.test({"src": img_t})
     outdict = model.get_current_visuals()
 
     sr = outdict["sr"]
